@@ -1,0 +1,17 @@
+class SymbolTable {
+    - List< Map<String, Id> > : symbols
+
+    + addContext()
+    + deleteContext()
+    + searchId()
+    + searchLocalId()
+    + addId()
+}
+
+class abstract Id {
+    - String id
+    - Enum type
+    - Boolean initialized
+    - 
+
+}

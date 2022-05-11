@@ -7,20 +7,22 @@ import org.antlr.v4.runtime.CommonTokenStream;
 
 // Las diferentes entradas se explicaran oportunamente
 public class App {
+    private static final String fileName = "qqqqqqqzxxxxinput/parentesis.txt";
+
     public static void main(String[] args) throws Exception {
         System.out.println("Hello, Compilador!!!");
         // create a CharStream that reads from file
-        CharStream input = CharStreams.fromFileName("input/entrada.txt");
+        CharStream input = CharStreams.fromFileName(fileName);
 
         // create a lexer that feeds off of input CharStream
         compiladoresLexer lexer = new compiladoresLexer(input);
-        
+
         // create a buffer of tokens pulled from the lexer
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        
+
         // create a parser that feeds off the tokens buffer
         compiladoresParser parser = new compiladoresParser(tokens);
-                
+
         // create Listener
         // ExpRegBaseListener escucha = new Escucha();
 
@@ -29,8 +31,8 @@ public class App {
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
-        parser.s();
-        // ParseTree tree =  parser.s();
+        parser.prog();
+        // ParseTree tree = parser.s();
         // Conectamos el visitor
         // Caminante visitor = new Caminante();
         // visitor.visit(tree);
@@ -39,6 +41,6 @@ public class App {
         // Imprime el arbol obtenido
         // System.out.println(tree.toStringTree(parser));
         // System.out.println(escucha);
-        
+
     }
 }
