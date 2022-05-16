@@ -10,9 +10,9 @@ TYPE_INT: 'int';
 TYPE_DOUBLE: 'double';
 CTRL_WHILE: 'while';
 CTRL_FOR: 'for';
+CTRL_IF: 'if';
 NUMBER: DIGIT+;
 DECIMAL_NUMBER: NUMBER '.' NUMBER;
-COMP: 'comp'; // Solo para cumplir con el ejercicio
 ID: (LETTER | '_') (LETTER | DIGIT | '_')*;
 COMMA: ',';
 SEMICOLON: ';';
@@ -36,13 +36,36 @@ PA: '(';
 PC: ')';
 WS: [ \t\n\r] -> skip;
 
-prog: instructions EOF;
+prog: procedures EOF;
 
-instructions: instruction SEMICOLON? instructions | block |;
+procedures:
+	functionDeclaration procedures
+	| functionForwardDeclaration SEMICOLON procedures
+	|;
 
-instruction: declaration | assignation | controlStructure;
+functionDeclaration:
+	vartype ID PA parametersDeclaration PC block;
+
+functionForwardDeclaration:
+	vartype ID PA parametersDeclaration PC;
+
+block: LA instructions LC;
+
+instructions: instruction instructions | block |;
+
+instruction:
+	declaration SEMICOLON
+	| assignation SEMICOLON
+	| controlStructure
+	| functionCall;
 
 declaration: iinteger | idouble;
+
+parametersDeclaration:
+	vartype ID COMMA parametersDeclaration
+	| vartype ID;
+
+vartype: TYPE_DOUBLE | TYPE_INT;
 
 iinteger: TYPE_INT integerDeclaration;
 
@@ -69,11 +92,15 @@ extendedDoubleDeclaration:
 
 assignation: ID EQ (value | alop);
 
-value: number | ID;
+value: number | ID | functionCall;
 
 number: NUMBER | DECIMAL_NUMBER;
 
-controlStructure: iwhile | ifor;
+controlStructure: iwhile | ifor | iif;
+
+functionCall: ID PA parameters PC;
+
+parameters: value | value COMMA parameters |;
 
 ifor:
 	CTRL_FOR PA assignation SEMICOLON alop SEMICOLON assignation PC (
@@ -83,7 +110,7 @@ ifor:
 
 iwhile: CTRL_WHILE PA alop PC (block | instruction);
 
-block: LA instructions LC;
+iif: CTRL_IF PA alop PC (block | instruction);
 
 alop: logOr lo;
 
@@ -109,4 +136,4 @@ term: factor t;
 
 t: MUL factor t | DIV factor t | MOD factor t |;
 
-factor: value | PA alop PC;
+factor: value | PA alop PC | functionCall;
