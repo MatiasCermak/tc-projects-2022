@@ -1,5 +1,20 @@
 package compiladores.domain;
 
 public enum Type {
-  INT, FLOAT, STRING, BOOLEAN, VOID, CHAR
+  INT("int"), 
+  FLOAT("float"), 
+  STRING("string"), 
+  BOOLEAN("bool"), 
+  VOID("void"), 
+  CHAR("char");
+
+  private String type;
+
+  Type(String type) {
+    this.type = type;
+  }
+
+  public String getType() {
+    return type;
+  }
 }

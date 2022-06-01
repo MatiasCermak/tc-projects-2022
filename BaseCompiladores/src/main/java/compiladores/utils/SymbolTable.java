@@ -51,4 +51,23 @@ public class SymbolTable {
     return null;
   }
 
+  public boolean containsId(String id) {
+    for (Map<String, Id> scope : this.scopes) {
+      if (scope.containsKey(id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public void print() {
+    for (Map<String, Id> scope : this.scopes) {
+      for (Map.Entry<String, Id> entry : scope.entrySet()) {
+        System.out.println(entry.getKey() + ": " + entry.getValue());
+      }
+    }
+  }
+
+
+
 }

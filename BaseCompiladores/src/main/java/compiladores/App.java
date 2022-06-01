@@ -7,8 +7,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 
 // Las diferentes entradas se explicaran oportunamente
 public class App {
-    private static final String fileName = "qqqqqqqzxxxxinput/parentesis.txt";
-
+    private static final String fileName = "input/parentesis.txt";
     public static void main(String[] args) throws Exception {
         System.out.println("Hello, Compilador!!!");
         // create a CharStream that reads from file
