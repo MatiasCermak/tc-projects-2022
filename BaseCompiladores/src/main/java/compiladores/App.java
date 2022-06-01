@@ -24,10 +24,11 @@ public class App {
         compiladoresParser parser = new compiladoresParser(tokens);
 
         // create Listener
-        // ExpRegBaseListener escucha = new Escucha();
+        compiladoresBaseListener listener = new myListener();
 
         // Conecto el objeto con Listeners al parser
-        // parser.addParseListener(escucha);
+        parser.addParseListener(listener);
+
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial

@@ -57,7 +57,7 @@ instruction:
 	declaration SEMICOLON
 	| assignation SEMICOLON
 	| controlStructure
-	| functionCall;
+	| functionCall SEMICOLON;
 
 declaration: iinteger | idouble;
 
