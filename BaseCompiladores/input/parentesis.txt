@@ -1,16 +1,11 @@
-int funcion (int a, int b){
-  int x
+int funcion(int a, int b){
+  int x, hola, abs=1;
   function(5);
-
-  Z=7;
-
-int i;
+  
+  int i;
   for(i=0; i < 10; i=i+1) {
     int x;
   }
 
- if a>b) int i;
-
-
+ if (a>b) int i;
 }
-

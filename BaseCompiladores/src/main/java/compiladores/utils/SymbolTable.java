@@ -22,13 +22,13 @@ public class SymbolTable {
     }
     return instance;
   }
-    
+
   public void addScope() {
     this.scopes.add(new LinkedHashMap<String, Id>());
   }
 
-  public void removeScope() {
-    this.scopes.remove(this.scopes.size() - 1);
+  public Map<String, Id> removeScope() {
+    return this.scopes.remove(this.scopes.size() - 1);
   }
 
   public void addId(Id id) {
@@ -44,7 +44,7 @@ public class SymbolTable {
     return null;
   }
 
-  public Id getLocalId(String id){
+  public Id getLocalId(String id) {
     if (this.scopes.get(this.scopes.size() - 1).containsKey(id)) {
       return this.scopes.get(this.scopes.size() - 1).get(id);
     }
@@ -67,7 +67,5 @@ public class SymbolTable {
       }
     }
   }
-
-
 
 }

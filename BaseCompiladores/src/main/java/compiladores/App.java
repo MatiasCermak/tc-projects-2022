@@ -8,8 +8,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 // Las diferentes entradas se explicaran oportunamente
 public class App {
     private static final String fileName = "input/parentesis.txt";
+
     public static void main(String[] args) throws Exception {
-        System.out.println("Hello, Compilador!!!");
         // create a CharStream that reads from file
         CharStream input = CharStreams.fromFileName(fileName);
 
@@ -23,11 +23,10 @@ public class App {
         compiladoresParser parser = new compiladoresParser(tokens);
 
         // create Listener
-        compiladoresBaseListener listener = new myListener();
+        compiladoresBaseListener listener = new CustomListener();
 
         // Conecto el objeto con Listeners al parser
         parser.addParseListener(listener);
-
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
