@@ -16,6 +16,7 @@ CTRL_FOR: 'for';
 CTRL_IF: 'if';
 NUMBER: DIGIT+;
 DECIMAL_NUMBER: NUMBER '.' NUMBER;
+CHARACTER: '("|\')' LETTER '("|\')';
 ID: (LETTER | '_') (LETTER | DIGIT | '_')*;
 COMMA: ',';
 SEMICOLON: ';';
@@ -44,6 +45,7 @@ prog: procedures EOF;
 procedures:
 	functionDeclaration procedures
 	| functionForwardDeclaration SEMICOLON procedures
+	| declaration SEMICOLON
 	|;
 
 functionDeclaration:
@@ -81,7 +83,7 @@ vartype: TYPE_DOUBLE | TYPE_INT | TYPE_CHAR | TYPE_FLOAT;
 
 assignation: ID EQ (value | alop);
 
-value: number | ID | functionCall;
+value: number | ID | functionCall | CHARACTER;
 
 number: NUMBER | DECIMAL_NUMBER;
 

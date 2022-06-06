@@ -1,11 +1,5 @@
 int funcion(int a, int b){
-  int x, hola, abs=1;
-  function(5);
-  
   int i;
-  for(i=0; i < 10; i=i+1) {
-    int x;
-  }
-
- if (a>b) int i;
+  int a = 0;
+  int x, hola, abs=1;
 }

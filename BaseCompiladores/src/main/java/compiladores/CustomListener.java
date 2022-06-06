@@ -27,11 +27,12 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitProg(ProgContext ctx) {
+    stack.add(this.symbolTable.removeScope());
   }
 
   @Override
   public void enterProg(ProgContext ctx) {
-    System.out.println("enterProg");
+    this.symbolTable.addScope();
   }
 
   @Override
@@ -42,24 +43,17 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitBlock(BlockContext ctx) {
-    try {
-      System.out.println("Salida de bloque");
-      this.symbolTable.print();
-      stack.add(this.symbolTable.removeScope());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
   }
 
   @Override
   public void enterDeclaration(DeclarationContext ctx) {
-    System.out.println("Enter Declaration");
     System.out.println(ctx.start.getText());
     this.vartype = ctx.getStart().getText();
   }
 
   @Override
   public void exitDeclaration(DeclarationContext ctx) {
+    this.vartype = null;
     System.out.println(ctx.getText());
     System.out.println("Exit Declaration");
   }
