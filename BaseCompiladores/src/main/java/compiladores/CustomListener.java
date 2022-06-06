@@ -1,5 +1,6 @@
 package compiladores;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +22,7 @@ public class CustomListener extends compiladoresBaseListener {
 
   public CustomListener() {
     this.symbolTable = SymbolTable.getInstance();
+    this.stack = new LinkedList<Map<String, Id>>();
   }
 
   @Override
@@ -40,8 +42,13 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitBlock(BlockContext ctx) {
-    System.out.println("Salida de bloque");
-    stack.add(this.symbolTable.removeScope());
+    try {
+      System.out.println("Salida de bloque");
+      this.symbolTable.print();
+      stack.add(this.symbolTable.removeScope());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
@@ -92,5 +99,7 @@ public class CustomListener extends compiladoresBaseListener {
   public void visitErrorNode(ErrorNode node) {
     System.out.println("Error: " + node.getText());
   }
+
+  // Utility functions
 
 }
