@@ -18,4 +18,9 @@ public class Function extends Id {
   public String toString() {
     return "Function " + this.getId() + " de tipo " + this.getType() + " con parametros " + this.getParameters();
   }
+
+  public void setParameters(List<Type> parameters) {
+    this.parameters = parameters;
+  }
+
 }

@@ -60,6 +60,13 @@ public class SymbolTable {
     return false;
   }
 
+  public boolean containsLocalId(String id) {
+    if (this.scopes.get(this.scopes.size() - 1).containsKey(id)) {
+      return true;
+    }
+    return false;
+  }
+  
   public void print() {
     for (Map<String, Id> scope : this.scopes) {
       for (Map.Entry<String, Id> entry : scope.entrySet()) {

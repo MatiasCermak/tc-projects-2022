@@ -1,5 +1,11 @@
-int funcion(int a, int b){
+int funcion(int a, int b, int c){
   int i;
   int a = 0;
-  int x, hola, abs=1;
+  int x, hola, abs=1, i, x, abs;
+
+  if(){
+    int hola, abs;
+  }
+
+  funcion(i, a);
 }

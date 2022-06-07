@@ -49,10 +49,12 @@ procedures:
 	|;
 
 functionDeclaration:
-	(vartype | TYPE_VOID) ID PA parametersDeclaration PC block;
+	functionId PA parametersDeclaration PC block;
 
 functionForwardDeclaration:
-	vartype ID PA parametersDeclaration PC;
+	functionId PA (parametersDeclaration|typesDeclaration) PC;
+
+functionId: (vartype | TYPE_VOID) ID;
 
 block: LA instructions LC;
 
@@ -67,18 +69,27 @@ instruction:
 declaration: vartype simpleDeclaration;
 
 simpleDeclaration:
-	ID extendedDeclaration
+	declaredVariable extendedDeclaration
 	| assignation extendedDeclaration;
 
 extendedDeclaration:
-	COMMA ID extendedDeclaration
+	COMMA declaredVariable extendedDeclaration
 	| COMMA assignation extendedDeclaration
 	|;
+
+declaredVariable: ID;
+
 parametersDeclaration:
 	vartype ID COMMA parametersDeclaration
 	| vartype ID
 	|;
 
+
+
+typesDeclaration: 
+vartype ID? COMMA typesDeclaration
+	| vartype ID?
+	|;
 vartype: TYPE_DOUBLE | TYPE_INT | TYPE_CHAR | TYPE_FLOAT;
 
 assignation: ID EQ (value | alop);
