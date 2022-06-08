@@ -6,8 +6,6 @@ import java.util.Map;
 
 import org.antlr.v4.runtime.tree.ErrorNode;
 
-import com.ibm.icu.impl.Pair;
-
 import compiladores.compiladoresParser.AssignationContext;
 import compiladores.compiladoresParser.BlockContext;
 import compiladores.compiladoresParser.DeclarationContext;
@@ -17,6 +15,7 @@ import compiladores.compiladoresParser.FunctionCallContext;
 import compiladores.compiladoresParser.FunctionDeclarationContext;
 import compiladores.compiladoresParser.FunctionForwardDeclarationContext;
 import compiladores.compiladoresParser.FunctionIdContext;
+import compiladores.compiladoresParser.ParametersContext;
 import compiladores.compiladoresParser.ParametersDeclarationContext;
 import compiladores.compiladoresParser.ProgContext;
 import compiladores.compiladoresParser.SimpleDeclarationContext;
@@ -28,12 +27,14 @@ public class CustomListener extends compiladoresBaseListener {
   private String vartype = null;
   private static List<Map<String, Id>> stack;
   private static List<List<String>> parameters;
+  private static List<Type> parametersTypes;
   private String functionName = null;
 
   public CustomListener() {
     this.symbolTable = SymbolTable.getInstance();
     this.stack = new LinkedList<Map<String, Id>>();
     this.parameters = new LinkedList<List<String>>();
+    this.parametersTypes = new LinkedList<Type>();
   }
 
   @Override
@@ -50,34 +51,54 @@ public class CustomListener extends compiladoresBaseListener {
   public void enterBlock(BlockContext ctx) {
     System.out.println("Entrada a bloque");
     if(functionName != null) {
-      Function function = this.symbolTable.getId(functionName).getFunction();
+      Function function = (Function)this.symbolTable.getId(functionName);
+      List<Type> params = new LinkedList<Type>();
       for(int i = 0; i < parameters.size(); i++) {
-        this.symbolTable.
+        params.add(Type.valueOf(parameters.get(i).get(0).toUpperCase()));
       }
+      function.setParameters(params);
     }
-
 
     this.symbolTable.addScope();
 
+    if(functionName != null) {
+      for(int i = 0; i < parameters.size(); i++) {
+        Id id = new Variable(parameters.get(i).get(1), Type.valueOf(parameters.get(i).get(0).toUpperCase()));
+        id.setInitialized(true);
+        this.symbolTable.addId(id);
+      }
+      functionName=null;
+      parameters.clear();
+    }
+    
 
   }
 
   @Override
   public void exitBlock(BlockContext ctx) {
+    //symbolTable.print();
+    List<Id> notInitialized = this.symbolTable.searchNotInitialized();
+    List<Id> notUsed = this.symbolTable.searchNotUsed();
+
+    System.out.println("\n No Inicializado ->" + notInitialized);
+    System.out.println("\nNo Utilizado ->" + notUsed);
+
     stack.add(this.symbolTable.removeScope());
+
+    //symbolTable.print();
   }
 
   @Override
   public void enterDeclaration(DeclarationContext ctx) {
-    System.out.println(ctx.start.getText());
+    //System.out.println(ctx.start.getText());
     this.vartype = ctx.getStart().getText();
   }
 
   @Override
   public void exitDeclaration(DeclarationContext ctx) {
     this.vartype = null;
-    System.out.println(ctx.getText());
-    System.out.println("Exit Declaration");
+    //System.out.println(ctx.getText());
+    //System.out.println("Exit Declaration");
   }
 
   @Override
@@ -95,7 +116,7 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitSimpleDeclaration(SimpleDeclarationContext ctx) {
-    System.out.println(ctx.getChildCount());
+    //System.out.println(ctx.getChildCount());
   }
 
   @Override
@@ -116,12 +137,14 @@ public class CustomListener extends compiladoresBaseListener {
       } else {
         Id id = new Variable(ctx.getChild(0).getText(), Type.valueOf(this.vartype.toUpperCase()));
         ((Variable) id).setValue(ctx.getChild(2).getText());
+        id.setInitialized(true);
         this.symbolTable.addId(id);
       }
     } else {
       if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
         Id id = symbolTable.getLocalId(ctx.getChild(0).getText());
         ((Variable) id).setValue(ctx.getChild(2).getText());
+        id.setInitialized(true);
       } else {
         System.out.println("Variable " + ctx.getChild(0).getText() + " not declared");
       }
@@ -140,9 +163,11 @@ public class CustomListener extends compiladoresBaseListener {
       System.out.println("Function " + ctx.getText() + " already declared");
     } else {
       Id id = new Function(ctx.getChild(1).getText(), Type.valueOf(ctx.getChild(0).getText().toUpperCase()), null);
+      id.setInitialized(true);
       this.symbolTable.addId(id);
+      this.functionName = ctx.getChild(1).getText();
     }
-    this.functionName = ctx.getText();
+    
   }
 
   
@@ -170,10 +195,12 @@ public class CustomListener extends compiladoresBaseListener {
       Id id = symbolTable.getId(ctx.getChild(0).getText());
       if (id instanceof Function) {
         Function function = (Function) id;
-        if (function.getParameters().size() == ctx.getChildCount() - 1) {
-          for (int i = 1; i < ctx.getChildCount(); i++) {
-            if (!function.getParameters().get(i - 1).getType()
-                .equals(Type.valueOf(ctx.getChild(i).getText().toUpperCase()))) {
+        System.out.println(function.getParameters());
+        System.out.println(this.parametersTypes);
+        if (function.getParameters().size() == this.parametersTypes.size()) {
+          for (int i = 0; i < this.parametersTypes.size(); i++) {
+            if (!function.getParameters().get(i)
+                .equals(this.parametersTypes.get(i))) {
               System.out.println("Invalid parameter type");
             }
           }
@@ -186,6 +213,22 @@ public class CustomListener extends compiladoresBaseListener {
     } else {
       System.out.println("Function " + ctx.getChild(0).getText() + " not declared");
     }
+    this.parametersTypes.clear();
+  }
+
+  
+
+  @Override
+  public void exitParameters(ParametersContext ctx) {
+    if(symbolTable.containsId(ctx.getChild(0).getText())){
+      Id id = symbolTable.getId(ctx.getChild(0).getText());
+      if(id.isInitialized()==false){
+        System.out.println("Variable " + ctx.getChild(0).getText() + " not initialized");
+      }
+        id.setUsed(true);
+        Type type = id.getType();
+        this.parametersTypes.add(type);
+    }
   }
 
   @Override
@@ -194,5 +237,5 @@ public class CustomListener extends compiladoresBaseListener {
   }
 
   // Utility functions
-
+  
 }

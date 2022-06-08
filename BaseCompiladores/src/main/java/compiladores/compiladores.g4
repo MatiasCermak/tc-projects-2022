@@ -52,7 +52,7 @@ functionDeclaration:
 	functionId PA parametersDeclaration PC block;
 
 functionForwardDeclaration:
-	functionId PA (parametersDeclaration|typesDeclaration) PC;
+	functionId PA (parametersDeclaration | typesDeclaration) PC;
 
 functionId: (vartype | TYPE_VOID) ID;
 
@@ -68,9 +68,7 @@ instruction:
 
 declaration: vartype simpleDeclaration;
 
-simpleDeclaration:
-	declaredVariable extendedDeclaration
-	| assignation extendedDeclaration;
+simpleDeclaration: (declaredVariable | assignation) extendedDeclaration;
 
 extendedDeclaration:
 	COMMA declaredVariable extendedDeclaration
@@ -84,10 +82,8 @@ parametersDeclaration:
 	| vartype ID
 	|;
 
-
-
-typesDeclaration: 
-vartype ID? COMMA typesDeclaration
+typesDeclaration:
+	vartype ID? COMMA typesDeclaration
 	| vartype ID?
 	|;
 vartype: TYPE_DOUBLE | TYPE_INT | TYPE_CHAR | TYPE_FLOAT;

@@ -1,11 +1,10 @@
-int funcion(int a, int b, int c){
-  int i;
-  int a = 0;
-  int x, hola, abs=1, i, x, abs;
-
-  if(){
-    int hola, abs;
+int funcion(float a, int b, int c){
+  float i;
+  int x, hola, abs=1;
+  a=2;
+  if(a<b){
+    int hola=1;
   }
 
-  funcion(i, a);
+  funcion(i, abs, abs);
 }
