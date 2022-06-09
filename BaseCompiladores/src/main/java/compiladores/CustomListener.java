@@ -15,19 +15,21 @@ import compiladores.compiladoresParser.FunctionCallContext;
 import compiladores.compiladoresParser.FunctionDeclarationContext;
 import compiladores.compiladoresParser.FunctionForwardDeclarationContext;
 import compiladores.compiladoresParser.FunctionIdContext;
+import compiladores.compiladoresParser.IforContext;
 import compiladores.compiladoresParser.ParametersContext;
 import compiladores.compiladoresParser.ParametersDeclarationContext;
 import compiladores.compiladoresParser.ProgContext;
 import compiladores.compiladoresParser.SimpleDeclarationContext;
+import compiladores.compiladoresParser.TypesDeclarationContext;
 import compiladores.domain.*;
 import compiladores.utils.SymbolTable;
 
 public class CustomListener extends compiladoresBaseListener {
   private SymbolTable symbolTable;
   private String vartype = null;
-  private static List<Map<String, Id>> stack;
-  private static List<List<String>> parameters;
-  private static List<Type> parametersTypes;
+  private List<Map<String, Id>> stack;
+  private List<List<String>> parameters;
+  private List<Type> parametersTypes;
   private String functionName = null;
 
   public CustomListener() {
@@ -49,74 +51,88 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void enterBlock(BlockContext ctx) {
-    System.out.println("Entrada a bloque");
-    if(functionName != null) {
-      Function function = (Function)this.symbolTable.getId(functionName);
-      List<Type> params = new LinkedList<Type>();
-      for(int i = 0; i < parameters.size(); i++) {
-        params.add(Type.valueOf(parameters.get(i).get(0).toUpperCase()));
+    // System.out.println("Entrada a bloque");
+    if (functionName != null) {
+
+      Function function = (Function) this.symbolTable.getId(functionName);
+
+      if (function.getParameters() == null) {
+        List<Type> params = new LinkedList<Type>();
+        for (int i = 0; i < parameters.size(); i++) {
+          params.add(Type.valueOf(parameters.get(i).get(0).toUpperCase()));
+        }
+        function.setParameters(params);
+
+      } else {
+        if (parameters.size() != function.getParameters().size()) {
+          System.out.println("Error: Numero de parametros incorrecto");
+        } else {
+
+          for (int i = 0; i < parameters.size(); i++) {
+            if (!function.getParameters().get(i).getType()
+                .equals(parameters.get(i).get(0))) {
+              System.out.println("Error: El tipo de parametro " + parameters.get(i).get(0)
+                  + " no coincide con el tipo de la funcion " + functionName);
+            }
+          }
+        }
+
       }
-      function.setParameters(params);
+
     }
 
-    this.symbolTable.addScope();
+    if (!(ctx.getParent() instanceof IforContext)) {
+      this.symbolTable.addScope();
+    }
 
-    if(functionName != null) {
-      for(int i = 0; i < parameters.size(); i++) {
+    if (functionName != null) {
+      for (int i = 0; i < parameters.size(); i++) {
+
         Id id = new Variable(parameters.get(i).get(1), Type.valueOf(parameters.get(i).get(0).toUpperCase()));
         id.setInitialized(true);
         this.symbolTable.addId(id);
       }
-      functionName=null;
+      functionName = null;
       parameters.clear();
     }
-    
 
   }
 
   @Override
   public void exitBlock(BlockContext ctx) {
-    //symbolTable.print();
+    // symbolTable.print();
     List<Id> notInitialized = this.symbolTable.searchNotInitialized();
     List<Id> notUsed = this.symbolTable.searchNotUsed();
 
     System.out.println("\n No Inicializado ->" + notInitialized);
-    System.out.println("\nNo Utilizado ->" + notUsed);
+    System.out.println("\n No Utilizado ->" + notUsed);
 
     stack.add(this.symbolTable.removeScope());
 
-    //symbolTable.print();
+    // symbolTable.print();
+  }
+
+  @Override
+  public void enterIfor(IforContext ctx) {
+    this.symbolTable.addScope();
+  }
+
+  @Override
+  public void exitIfor(IforContext ctx) {
+    stack.add(this.symbolTable.removeScope());
   }
 
   @Override
   public void enterDeclaration(DeclarationContext ctx) {
-    //System.out.println(ctx.start.getText());
+    // System.out.println(ctx.start.getText());
     this.vartype = ctx.getStart().getText();
   }
 
   @Override
   public void exitDeclaration(DeclarationContext ctx) {
     this.vartype = null;
-    //System.out.println(ctx.getText());
-    //System.out.println("Exit Declaration");
-  }
-
-  @Override
-  public void enterExtendedDeclaration(ExtendedDeclarationContext ctx) {
-  }
-
-  @Override
-  public void exitExtendedDeclaration(ExtendedDeclarationContext ctx) {
-  }
-
-  @Override
-  public void enterSimpleDeclaration(SimpleDeclarationContext ctx) {
-
-  }
-
-  @Override
-  public void exitSimpleDeclaration(SimpleDeclarationContext ctx) {
-    //System.out.println(ctx.getChildCount());
+    // System.out.println(ctx.getText());
+    // System.out.println("Exit Declaration");
   }
 
   @Override
@@ -131,6 +147,7 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitAssignation(AssignationContext ctx) {
+    System.out.println(ctx.getText());
     if (vartype != null) {
       if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
         System.out.println("Variable " + ctx.getChild(0).getText() + " already declared");
@@ -143,8 +160,12 @@ public class CustomListener extends compiladoresBaseListener {
     } else {
       if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
         Id id = symbolTable.getLocalId(ctx.getChild(0).getText());
-        ((Variable) id).setValue(ctx.getChild(2).getText());
-        id.setInitialized(true);
+        if (id instanceof Function) {
+          System.out.println("Attempted assignation to " + ctx.getChild(0).getText() + " which is a function");
+        } else {
+          ((Variable) id).setValue(ctx.getChild(2).getText());
+          id.setInitialized(true);
+        }
       } else {
         System.out.println("Variable " + ctx.getChild(0).getText() + " not declared");
       }
@@ -152,41 +173,60 @@ public class CustomListener extends compiladoresBaseListener {
   }
 
   @Override
-  public void enterFunctionDeclaration(FunctionDeclarationContext ctx) {
-
-  }
-
-
-  @Override
   public void exitFunctionId(FunctionIdContext ctx) {
-    if (symbolTable.containsLocalId(ctx.getText())) {
-      System.out.println("Function " + ctx.getText() + " already declared");
+
+    if (symbolTable.containsLocalId(ctx.getChild(1).getText())) {
+      Id id = symbolTable.getId(ctx.getChild(1).getText());
+      if (id.isInitialized() || ctx.getParent() instanceof FunctionForwardDeclarationContext) {
+        System.out.println("Function " + ctx.getChild(1).getText() + " already declared");
+      } else {
+        id.setInitialized(true);
+      }
     } else {
       Id id = new Function(ctx.getChild(1).getText(), Type.valueOf(ctx.getChild(0).getText().toUpperCase()), null);
-      id.setInitialized(true);
+      if (ctx.getParent() instanceof FunctionDeclarationContext) {
+        id.setInitialized(true);
+      }
       this.symbolTable.addId(id);
-      this.functionName = ctx.getChild(1).getText();
+
     }
-    
+    this.functionName = ctx.getChild(1).getText();
+
   }
 
-  
+  @Override
+  public void exitTypesDeclaration(TypesDeclarationContext ctx) {
+    List<String> params = new LinkedList<String>();
+
+    params.add(ctx.getChild(0).getText());
+
+    parameters.add(params);
+  }
+
   @Override
   public void exitParametersDeclaration(ParametersDeclarationContext ctx) {
-    System.out.println("Exit Parameters Declaration" + ctx.getText());
-    
+
     List<String> params = new LinkedList<String>();
 
     params.add(ctx.getChild(0).getText());
     params.add(ctx.getChild(1).getText());
 
-    this.parameters.add(params);
+    parameters.add(params);
   }
 
   @Override
   public void exitFunctionForwardDeclaration(FunctionForwardDeclarationContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitFunctionForwardDeclaration(ctx);
+
+    if (functionName != null) {
+      Function function = (Function) this.symbolTable.getId(functionName);
+      List<Type> params = new LinkedList<Type>();
+      for (int i = 0; i < parameters.size(); i++) {
+        params.add(Type.valueOf(parameters.get(i).get(0).toUpperCase()));
+      }
+      function.setParameters(params);
+    }
+    functionName = null;
+    parameters.clear();
   }
 
   @Override
@@ -213,21 +253,19 @@ public class CustomListener extends compiladoresBaseListener {
     } else {
       System.out.println("Function " + ctx.getChild(0).getText() + " not declared");
     }
-    this.parametersTypes.clear();
+    parametersTypes.clear();
   }
-
-  
 
   @Override
   public void exitParameters(ParametersContext ctx) {
-    if(symbolTable.containsId(ctx.getChild(0).getText())){
+    if (symbolTable.containsId(ctx.getChild(0).getText())) {
       Id id = symbolTable.getId(ctx.getChild(0).getText());
-      if(id.isInitialized()==false){
+      if (id.isInitialized() == false) {
         System.out.println("Variable " + ctx.getChild(0).getText() + " not initialized");
       }
-        id.setUsed(true);
-        Type type = id.getType();
-        this.parametersTypes.add(type);
+      id.setUsed(true);
+      Type type = id.getType();
+      parametersTypes.add(type);
     }
   }
 
@@ -237,5 +275,14 @@ public class CustomListener extends compiladoresBaseListener {
   }
 
   // Utility functions
-  
+
+  private Type getTypeFromValue(String text) {
+    if (symbolTable.containsId(text)) {
+      return symbolTable.getId(text).getType();
+    } else if (text.startsWith("\"") || text.startsWith("\'")) {
+      return Type.CHAR;
+    } else if (true)
+      return null;
+  }
+
 }

@@ -16,7 +16,7 @@ CTRL_FOR: 'for';
 CTRL_IF: 'if';
 NUMBER: DIGIT+;
 DECIMAL_NUMBER: NUMBER '.' NUMBER;
-CHARACTER: '("|\')' LETTER '("|\')';
+CHARACTER: '"' LETTER '"' | '\'' LETTER '\'';
 ID: (LETTER | '_') (LETTER | DIGIT | '_')*;
 COMMA: ',';
 SEMICOLON: ';';

@@ -3,8 +3,7 @@ package compiladores.domain;
 public enum Type {
   INT("int"), 
   FLOAT("float"), 
-  STRING("string"), 
-  BOOLEAN("bool"), 
+  DOUBLE("double"),
   VOID("void"), 
   CHAR("char");
 
