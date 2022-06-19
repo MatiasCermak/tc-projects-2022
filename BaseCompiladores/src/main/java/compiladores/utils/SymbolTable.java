@@ -66,35 +66,27 @@ public class SymbolTable {
     }
     return false;
   }
-  
+
   public List<Id> searchNotInitialized() {
     List<Id> notInitialized = new LinkedList<Id>();
     Map<String, Id> scope = this.scopes.get(this.scopes.size() - 1);
-      for (Id id : scope.values()) {
-        if (id.isInitialized() == false) {
-          notInitialized.add(id);
-        }
+    for (Id id : scope.values()) {
+      if (id.isInitialized() == false) {
+        notInitialized.add(id);
       }
+    }
     return notInitialized;
   }
 
-  public List<Id> searchNotUsed(){
+  public List<Id> searchNotUsed() {
     List<Id> notUsed = new LinkedList<Id>();
     Map<String, Id> scope = this.scopes.get(this.scopes.size() - 1);
-      for (Id id : scope.values()) {
-        if (id.isInitialized() == true && id.isUsed() == false) {
-          notUsed.add(id);
-        }
-      }
-    return notUsed;
-  }
-
-  public void print() {
-    for (Map<String, Id> scope : this.scopes) {
-      for (Map.Entry<String, Id> entry : scope.entrySet()) {
-        System.out.println(entry.getKey() + ": " + entry.getValue());
+    for (Id id : scope.values()) {
+      if (id.isInitialized() == true && id.isUsed() == false) {
+        notUsed.add(id);
       }
     }
+    return notUsed;
   }
 
 }

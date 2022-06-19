@@ -1,14 +1,15 @@
-int funcion(float, int a, int);
 int funcion2(float, int, int);
 
-int funcion(float a, int b, int c){
-  float i;
-  int x, hola, abs=1;
-  a='v';
+int main(float a, int b, int c){
   if(a<b){
     int hola=1;
+    hola = a + b;
   }
-
-  funcion(i, abs, abs);
+  funcion2(a, b, c);
 }
 
+int funcion2(float a, int c, int d){
+  a = c + d;
+  d = a;
+  c = a;
+}

@@ -3,7 +3,7 @@ package compiladores.domain;
 import java.util.List;
 
 public class Function extends Id {
-  
+
   private List<Type> parameters;
 
   public Function(String id, Type type, List<Type> parameters) {
@@ -16,7 +16,9 @@ public class Function extends Id {
   }
 
   public String toString() {
-    return "Function " + this.getId() + " de tipo " + this.getType() + " con parametros " + this.getParameters();
+    return "Function " + this.getId() + " of type " + this.getType() + " with parameters " + this.getParameters()
+        + " Used: " + this.isUsed() + " Initialized: "
+        + this.isInitialized();
   }
 
   public void setParameters(List<Type> parameters) {

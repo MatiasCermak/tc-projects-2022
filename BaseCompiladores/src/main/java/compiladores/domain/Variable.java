@@ -1,22 +1,14 @@
 package compiladores.domain;
 
-public class Variable extends Id { 
-
-  private String value;
+public class Variable extends Id {
 
   public Variable(String id, Type type) {
     super(id, type);
   }
 
   public String toString() {
-    return "Variable " + this.getId() + " de tipo " + this.getType();
+    return "Variable " + this.getId() + " of type " + this.getType() + " Used: " + this.isUsed() + " Initialized: "
+        + this.isInitialized();
   }
 
-  public void setValue(String value) {
-    this.value = value;
-  }
-
-  public String getValue() {
-    return this.value;
-  }
 }

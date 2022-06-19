@@ -4,13 +4,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 
 import compiladores.compiladoresParser.AssignationContext;
 import compiladores.compiladoresParser.BlockContext;
 import compiladores.compiladoresParser.DeclarationContext;
 import compiladores.compiladoresParser.DeclaredVariableContext;
-import compiladores.compiladoresParser.ExtendedDeclarationContext;
 import compiladores.compiladoresParser.FunctionCallContext;
 import compiladores.compiladoresParser.FunctionDeclarationContext;
 import compiladores.compiladoresParser.FunctionForwardDeclarationContext;
@@ -19,7 +19,6 @@ import compiladores.compiladoresParser.IforContext;
 import compiladores.compiladoresParser.ParametersContext;
 import compiladores.compiladoresParser.ParametersDeclarationContext;
 import compiladores.compiladoresParser.ProgContext;
-import compiladores.compiladoresParser.SimpleDeclarationContext;
 import compiladores.compiladoresParser.TypesDeclarationContext;
 import compiladores.domain.*;
 import compiladores.utils.SymbolTable;
@@ -31,16 +30,22 @@ public class CustomListener extends compiladoresBaseListener {
   private List<List<String>> parameters;
   private List<Type> parametersTypes;
   private String functionName = null;
+  private List<String> errors;
 
-  public CustomListener() {
+  public CustomListener(List<String> errors) {
     this.symbolTable = SymbolTable.getInstance();
     this.stack = new LinkedList<Map<String, Id>>();
     this.parameters = new LinkedList<List<String>>();
     this.parametersTypes = new LinkedList<Type>();
+    this.errors = errors;
   }
 
   @Override
   public void exitProg(ProgContext ctx) {
+    if (this.symbolTable.containsLocalId("main")) {
+      this.symbolTable.getId("main").setUsed(true);
+    }
+    variableCheck(ctx);
     stack.add(this.symbolTable.removeScope());
   }
 
@@ -51,7 +56,6 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void enterBlock(BlockContext ctx) {
-    // System.out.println("Entrada a bloque");
     if (functionName != null) {
 
       Function function = (Function) this.symbolTable.getId(functionName);
@@ -65,20 +69,18 @@ public class CustomListener extends compiladoresBaseListener {
 
       } else {
         if (parameters.size() != function.getParameters().size()) {
-          System.out.println("Error: Numero de parametros incorrecto");
+          printSemanticError("Incorrect number of parameters", ctx);
         } else {
 
           for (int i = 0; i < parameters.size(); i++) {
             if (!function.getParameters().get(i).getType()
                 .equals(parameters.get(i).get(0))) {
-              System.out.println("Error: El tipo de parametro " + parameters.get(i).get(0)
-                  + " no coincide con el tipo de la funcion " + functionName);
+              printSemanticError("The parameter of type " + parameters.get(i).get(0)
+                  + " does not match function type " + functionName, ctx);
             }
           }
         }
-
       }
-
     }
 
     if (!(ctx.getParent() instanceof IforContext)) {
@@ -100,16 +102,8 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitBlock(BlockContext ctx) {
-    // symbolTable.print();
-    List<Id> notInitialized = this.symbolTable.searchNotInitialized();
-    List<Id> notUsed = this.symbolTable.searchNotUsed();
-
-    System.out.println("\n No Inicializado ->" + notInitialized);
-    System.out.println("\n No Utilizado ->" + notUsed);
-
+    variableCheck(ctx);
     stack.add(this.symbolTable.removeScope());
-
-    // symbolTable.print();
   }
 
   @Override
@@ -119,26 +113,24 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitIfor(IforContext ctx) {
+    variableCheck(ctx);
     stack.add(this.symbolTable.removeScope());
   }
 
   @Override
   public void enterDeclaration(DeclarationContext ctx) {
-    // System.out.println(ctx.start.getText());
     this.vartype = ctx.getStart().getText();
   }
 
   @Override
   public void exitDeclaration(DeclarationContext ctx) {
     this.vartype = null;
-    // System.out.println(ctx.getText());
-    // System.out.println("Exit Declaration");
   }
 
   @Override
   public void exitDeclaredVariable(DeclaredVariableContext ctx) {
     if (symbolTable.containsLocalId(ctx.getText())) {
-      System.out.println("Variable " + ctx.getText() + " already declared");
+      printSemanticError("Variable " + ctx.getText() + " already declared", ctx);
     } else {
       Id id = new Variable(ctx.getText(), Type.valueOf(this.vartype.toUpperCase()));
       this.symbolTable.addId(id);
@@ -147,13 +139,11 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitAssignation(AssignationContext ctx) {
-    System.out.println(ctx.getText());
     if (vartype != null) {
       if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
-        System.out.println("Variable " + ctx.getChild(0).getText() + " already declared");
+        printSemanticError("Variable " + ctx.getChild(0).getText() + " already declared", ctx);
       } else {
         Id id = new Variable(ctx.getChild(0).getText(), Type.valueOf(this.vartype.toUpperCase()));
-        ((Variable) id).setValue(ctx.getChild(2).getText());
         id.setInitialized(true);
         this.symbolTable.addId(id);
       }
@@ -161,13 +151,13 @@ public class CustomListener extends compiladoresBaseListener {
       if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
         Id id = symbolTable.getLocalId(ctx.getChild(0).getText());
         if (id instanceof Function) {
-          System.out.println("Attempted assignation to " + ctx.getChild(0).getText() + " which is a function");
+          printSemanticError("Attempted assignation to " + ctx.getChild(0).getText() + " which is a function", ctx);
         } else {
-          ((Variable) id).setValue(ctx.getChild(2).getText());
           id.setInitialized(true);
+          id.setUsed(true);
         }
       } else {
-        System.out.println("Variable " + ctx.getChild(0).getText() + " not declared");
+        printSemanticError("Variable " + ctx.getChild(0).getText() + " not declared", ctx);
       }
     }
   }
@@ -178,7 +168,7 @@ public class CustomListener extends compiladoresBaseListener {
     if (symbolTable.containsLocalId(ctx.getChild(1).getText())) {
       Id id = symbolTable.getId(ctx.getChild(1).getText());
       if (id.isInitialized() || ctx.getParent() instanceof FunctionForwardDeclarationContext) {
-        System.out.println("Function " + ctx.getChild(1).getText() + " already declared");
+        printSemanticError("Function " + ctx.getChild(1).getText() + " already declared", ctx);
       } else {
         id.setInitialized(true);
       }
@@ -235,23 +225,23 @@ public class CustomListener extends compiladoresBaseListener {
       Id id = symbolTable.getId(ctx.getChild(0).getText());
       if (id instanceof Function) {
         Function function = (Function) id;
-        System.out.println(function.getParameters());
-        System.out.println(this.parametersTypes);
         if (function.getParameters().size() == this.parametersTypes.size()) {
           for (int i = 0; i < this.parametersTypes.size(); i++) {
             if (!function.getParameters().get(i)
                 .equals(this.parametersTypes.get(i))) {
-              System.out.println("Invalid parameter type");
+              printSemanticError("Invalid parameter types", ctx);
+              return;
             }
           }
+          function.setUsed(true);
         } else {
-          System.out.println("Invalid number of parameters");
+          printSemanticError("Invalid number of parameters", ctx);
         }
       } else {
-        System.out.println("Invalid function call");
+        printSemanticError("Invalid function call", ctx);
       }
     } else {
-      System.out.println("Function " + ctx.getChild(0).getText() + " not declared");
+      printSemanticError("Function " + ctx.getChild(0).getText() + " not declared", ctx);
     }
     parametersTypes.clear();
   }
@@ -261,7 +251,7 @@ public class CustomListener extends compiladoresBaseListener {
     if (symbolTable.containsId(ctx.getChild(0).getText())) {
       Id id = symbolTable.getId(ctx.getChild(0).getText());
       if (id.isInitialized() == false) {
-        System.out.println("Variable " + ctx.getChild(0).getText() + " not initialized");
+        printSemanticError("Variable " + ctx.getChild(0).getText() + " not initialized", ctx);
       }
       id.setUsed(true);
       Type type = id.getType();
@@ -269,20 +259,33 @@ public class CustomListener extends compiladoresBaseListener {
     }
   }
 
-  @Override
-  public void visitErrorNode(ErrorNode node) {
-    System.out.println("Error: " + node.getText());
+  private void printSemanticError(String text, RuleContext ctx) {
+    ParserRuleContext pctx = (ParserRuleContext) ctx;
+    String errStr = "Semantic error in line " + pctx.getStart().getLine() + ": " + text;
+    System.out.println("\n" + errStr);
+    this.errors.add(errStr);
   }
 
-  // Utility functions
-
-  private Type getTypeFromValue(String text) {
-    if (symbolTable.containsId(text)) {
-      return symbolTable.getId(text).getType();
-    } else if (text.startsWith("\"") || text.startsWith("\'")) {
-      return Type.CHAR;
-    } else if (true)
-      return null;
+  public void printSymbolTable() {
+    int level = this.stack.size();
+    for (Map<String, Id> scope : this.stack) {
+      System.out.println("\n\n\nScope level: " + level);
+      level--;
+      for (Map.Entry<String, Id> entry : scope.entrySet()) {
+        System.out.println(entry.getKey() + ": " + entry.getValue());
+      }
+    }
   }
 
+  public void variableCheck(RuleContext ctx) {
+    List<Id> notInitialized = this.symbolTable.searchNotInitialized();
+    List<Id> notUsed = this.symbolTable.searchNotUsed();
+
+    if (!notInitialized.isEmpty()) {
+      printSemanticError("\n Not initialized ->" + notInitialized, ctx);
+    }
+    if (!notUsed.isEmpty()) {
+      printSemanticError("\n Not used ->" + notUsed, ctx);
+    }
+  }
 }
