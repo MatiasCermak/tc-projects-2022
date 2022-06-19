@@ -8,11 +8,15 @@ fragment DIGIT:[0-9];
 fragment LETTER: [A-Za-z];
 TYPE_INT: 'int';
 TYPE_DOUBLE: 'double';
+TYPE_CHAR: 'char';
+TYPE_FLOAT: 'float';
+TYPE_VOID: 'void';
 CTRL_WHILE: 'while';
 CTRL_FOR: 'for';
 CTRL_IF: 'if';
 NUMBER: DIGIT+;
 DECIMAL_NUMBER: NUMBER '.' NUMBER;
+CHARACTER: '"' LETTER '"' | '\'' LETTER '\'';
 ID: (LETTER | '_') (LETTER | DIGIT | '_')*;
 COMMA: ',';
 SEMICOLON: ';';
@@ -41,13 +45,16 @@ prog: procedures EOF;
 procedures:
 	functionDeclaration procedures
 	| functionForwardDeclaration SEMICOLON procedures
+	| declaration SEMICOLON
 	|;
 
 functionDeclaration:
-	vartype ID PA parametersDeclaration PC block;
+	functionId PA parametersDeclaration PC block;
 
 functionForwardDeclaration:
-	vartype ID PA parametersDeclaration PC;
+	functionId PA (parametersDeclaration | typesDeclaration) PC;
+
+functionId: (vartype | TYPE_VOID) ID;
 
 block: LA instructions LC;
 
@@ -59,40 +66,31 @@ instruction:
 	| controlStructure
 	| functionCall SEMICOLON;
 
-declaration: iinteger | idouble;
+declaration: vartype simpleDeclaration;
+
+simpleDeclaration: (declaredVariable | assignation) extendedDeclaration;
+
+extendedDeclaration:
+	COMMA declaredVariable extendedDeclaration
+	| COMMA assignation extendedDeclaration
+	|;
+
+declaredVariable: ID;
 
 parametersDeclaration:
 	vartype ID COMMA parametersDeclaration
-	| vartype ID;
-
-vartype: TYPE_DOUBLE | TYPE_INT;
-
-iinteger: TYPE_INT integerDeclaration;
-
-idouble: TYPE_DOUBLE doubleDeclaration;
-
-integerDeclaration:
-	ID extendedIntegerDeclaration
-	| assignation extendedIntegerDeclaration;
-
-extendedIntegerDeclaration:
-	COMMA ID extendedIntegerDeclaration
-	| COMMA assignation extendedIntegerDeclaration
+	| vartype ID
 	|;
 
-doubleDeclaration:
-	ID doubleDeclaration
-	| assignation doubleDeclaration
+typesDeclaration:
+	vartype ID? COMMA typesDeclaration
+	| vartype ID?
 	|;
-
-extendedDoubleDeclaration:
-	COMMA ID extendedDoubleDeclaration
-	| COMMA assignation extendedDoubleDeclaration
-	|;
+vartype: TYPE_DOUBLE | TYPE_INT | TYPE_CHAR | TYPE_FLOAT;
 
 assignation: ID EQ (value | alop);
 
-value: number | ID | functionCall;
+value: number | ID | functionCall | CHARACTER;
 
 number: NUMBER | DECIMAL_NUMBER;
 
@@ -136,4 +134,4 @@ term: factor t;
 
 t: MUL factor t | DIV factor t | MOD factor t |;
 
-factor: value | PA alop PC | functionCall;
+factor: value | PA alop PC;
