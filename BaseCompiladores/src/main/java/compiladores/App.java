@@ -62,6 +62,9 @@ public class App {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.pack();
             frame.setVisible(true);
+
+						CustomVisitor visitor = new CustomVisitor();
+						visitor.visit(tree);
         }
     }
 }
