@@ -195,6 +195,7 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitParametersDeclaration(ParametersDeclarationContext ctx) {
+    if(ctx.getChild(0) == null) return;
 
     List<String> params = new LinkedList<String>();
 

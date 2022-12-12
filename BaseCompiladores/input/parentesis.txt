@@ -1,11 +1,11 @@
-int funcion2(float, int, int);
 
-int main(float a, int b, int c){
-  funcion2(a, b, c);
-}
+void main(){
+	int a=5;
+	int d=5;
+	int c=6;
 
-int funcion2(float a, int c, int d){
   a = c + d + 582 * 58;
   d = a + 652;
   c = a;
 }
+
