@@ -108,8 +108,8 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 		}
 
 		if (tempQuartet.getValue0()==null){
-			tempQuartet.setAt0(ctx.getStart().getText());
-			
+			tempQuartet=new Quartet<String,String,String,String>(ctx.getStart().getText(),tempQuartet.getValue1(),null,tempQuartet.getValue3());
+
 		}
 
 		return super.visitExp(ctx);
@@ -129,22 +129,22 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 
 	@Override
 	public Integer visitValue(ValueContext ctx) {
-		System.out.println(tempQuartet.toString());
+		
 		if (tempQuartet.getValue3()==null){
 			return super.visitValue(ctx);
 		}
+		
 
 		if (tempQuartet.getValue1()==null){
-			tempQuartet.addAt1(ctx.getText());
-			System.out.println(tempQuartet.toString());
+			tempQuartet=new Quartet<String,String,String,String>(null,ctx.getText(),null,tempQuartet.getValue3());
+			//System.out.println(tempQuartet.toString());
 		}else if (tempQuartet.getValue2()==null){
-			tempQuartet.setAt2(ctx.getText());
+			tempQuartet=new Quartet<String,String,String,String>(tempQuartet.getValue0(),tempQuartet.getValue1(),ctx.getText(),tempQuartet.getValue3());
 			quartets.add(tempQuartet);
 			tempQuartet = new Quartet<String,String,String,String>(null, null, null, null);
-			//System.out.println(quartets.toString());
+			System.out.println(quartets.toString());
 		}
 
-		
 		return super.visitValue(ctx);
 	}
 
