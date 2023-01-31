@@ -1,7 +1,10 @@
 package compiladores;
 
+import java.util.Stack;
+
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.javatuples.Quartet;
+import org.javatuples.Quintet;
 
 import compiladores.compiladoresParser.EContext;
 import compiladores.compiladoresParser.EqContext;
@@ -17,22 +20,23 @@ import compiladores.compiladoresParser.RelContext;
 import compiladores.compiladoresParser.TContext;
 import compiladores.compiladoresParser.TermContext;
 import compiladores.compiladoresParser.ValueContext;
-import compiladores.utils.Quartets;
+import compiladores.utils.Quintets;
+import compiladores.utils.ThreeAddressCodeManager;
 
 public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
-	private Quartets quartets = new Quartets(); 
-	Quartet<String,String,String,String> tempQuartet;
+	private ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager(); 
+	Quintets alopStack = new Quintets();
+
 
 	@Override
 	public Integer visitAssignation(compiladoresParser.AssignationContext ctx){
 
 		if(ctx.value() != null) {
-			tempQuartet = new Quartet(null,ctx.value().getText(),null,ctx.ID().getText());
-			quartets.add(tempQuartet);
-			tempQuartet = new Quartet<String,String,String,String>(null, null, null, null);
-		}else{
-			tempQuartet = new Quartet(null,null,null,ctx.ID().getText());			
-			//System.out.println(tempQuartet.toString());
+			System.out.println(ctx.value().getText());
+			Quintet<String,String,String,String,String> newInstruction = new Quintet(null,ctx.value().getText(),null,ctx.ID().getText(), null);
+			tacManager.getTac().add(newInstruction);
+		}else if(ctx.alop() != null) {
+			System.out.println(ctx.alop().getText());
 		}
 
 		return super.visitChildren(ctx);
@@ -51,33 +55,15 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 	}
 
 	@Override
-	public Integer visitLogAnd(LogAndContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitLogAnd(ctx);
-	}
-
-	@Override
-	public Integer visitEq(EqContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitEq(ctx);
-	}
-
-	@Override
-	public Integer visitRel(RelContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitRel(ctx);
-	}
-
-	@Override
-	public Integer visitTerm(TermContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitTerm(ctx);
-	}
-
-	@Override
 	public Integer visitLo(LoContext ctx) {
 		//System.out.println("lo" + ctx.getText());
 		return super.visitLo(ctx);
+	}
+
+	@Override
+	public Integer visitLogAnd(LogAndContext ctx) {
+		// TODO Auto-generated method stub
+		return super.visitLogAnd(ctx);
 	}
 
 	@Override
@@ -87,9 +73,21 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 	}
 
 	@Override
+	public Integer visitEq(EqContext ctx) {
+		// TODO Auto-generated method stub
+		return super.visitEq(ctx);
+	}
+
+	@Override
 	public Integer visitE(EContext ctx) {
 		//System.out.println("E" + ctx.getText());
 		return super.visitE(ctx);
+	}
+
+	@Override
+	public Integer visitRel(RelContext ctx) {
+		// TODO Auto-generated method stub
+		return super.visitRel(ctx);
 	}
 
 	@Override
@@ -99,26 +97,21 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 	}
 
 	@Override
-	public Integer visitExp(ExpContext ctx) {
-		//System.out.println("exp " + ctx.getStart().getText());
-		
-		 
-		if (tempQuartet.getValue1()==null){
-			return super.visitExp(ctx);
-		}
-
-		if (tempQuartet.getValue0()==null){
-			tempQuartet=new Quartet<String,String,String,String>(ctx.getStart().getText(),tempQuartet.getValue1(),null,tempQuartet.getValue3());
-
-		}
-
-		return super.visitExp(ctx);
+	public Integer visitTerm(TermContext ctx) {
+		// TODO Auto-generated method stub
+		return super.visitTerm(ctx);
 	}
 
 	@Override
 	public Integer visitT(TContext ctx) {
 		//System.out.println("T" + ctx.getText());
 		return super.visitT(ctx);
+	}
+	
+	@Override
+	public Integer visitExp(ExpContext ctx) {
+		//System.out.println("exp " + ctx.getStart().getText());
+		return super.visitExp(ctx);
 	}
 
 	@Override
@@ -129,22 +122,11 @@ public class CustomVisitor extends compiladoresBaseVisitor<Integer>{
 
 	@Override
 	public Integer visitValue(ValueContext ctx) {
-		
-		if (tempQuartet.getValue3()==null){
-			return super.visitValue(ctx);
-		}
-		
+		Quintet<String, String, String, String, String> quintet = alopStack.createEmptyQuintet();
+		if(!ctx.children.isEmpty()) {
 
-		if (tempQuartet.getValue1()==null){
-			tempQuartet=new Quartet<String,String,String,String>(null,ctx.getText(),null,tempQuartet.getValue3());
-			//System.out.println(tempQuartet.toString());
-		}else if (tempQuartet.getValue2()==null){
-			tempQuartet=new Quartet<String,String,String,String>(tempQuartet.getValue0(),tempQuartet.getValue1(),ctx.getText(),tempQuartet.getValue3());
-			quartets.add(tempQuartet);
-			tempQuartet = new Quartet<String,String,String,String>(null, null, null, null);
-			System.out.println(quartets.toString());
 		}
-
+		alopStack.add(quintet);		
 		return super.visitValue(ctx);
 	}
 
