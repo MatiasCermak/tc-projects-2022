@@ -2,11 +2,24 @@ package compiladores.utils;
 
 import java.util.LinkedList;
 
-import org.javatuples.Quintet;
+public class Quintets extends LinkedList<Quintet> {
 
-public class Quintets extends LinkedList<Quintet<String,String,String,String,String>> {
+	private Integer trueIndex = 0;
 
-	public Quintet<String, String, String, String, String> createEmptyQuintet() {
-		return new Quintet<String,String,String,String,String>(null, null, null, null, null);
-	}
+	@Override
+	public boolean add(Quintet e) {
+		if(trueIndex == this.size()) {
+			return super.add(e);
+		}
+		try {
+			super.add(trueIndex, e);
+			trueIndex += 1;
+			return true;
+		} catch (Exception ex) {
+			throw ex;
+		}
+	} 
+
+
+	
 }
