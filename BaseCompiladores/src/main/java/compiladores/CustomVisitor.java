@@ -1,5 +1,8 @@
 package compiladores;
 
+import java.util.List;
+
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,21 +24,20 @@ import compiladores.utils.Quintet;
 import compiladores.utils.Quintets;
 import compiladores.utils.ThreeAddressCodeManager;
 
-public class CustomVisitor extends compiladoresBaseVisitor<Void>{
-	private ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager(); 
+public class CustomVisitor extends compiladoresBaseVisitor<Void> {
+	private ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager();
 	Quintets alopStack = new Quintets();
 
-
 	@Override
-	public Void visitAssignation(compiladoresParser.AssignationContext ctx){
+	public Void visitAssignation(compiladoresParser.AssignationContext ctx) {
 
-		if(ctx.value() != null) {
+		if (ctx.value() != null) {
 			// System.out.println(ctx.value().getText());
 			Quintet newInstruction = new Quintet();
 			newInstruction.setArg1(ctx.value().getText());
 			newInstruction.setRes(ctx.ID().getText());
 			tacManager.getTac().add(newInstruction);
-		}else if(ctx.alop() != null) {
+		} else if (ctx.alop() != null) {
 			super.visitChildren(ctx);
 			// System.out.println(ctx.alop().getText());
 		}
@@ -43,8 +45,8 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 	}
 
 	@Override
-	public Void visitAlop(compiladoresParser.AlopContext ctx){
-		//System.out.println("alop " + ctx.getText());\
+	public Void visitAlop(compiladoresParser.AlopContext ctx) {
+		// System.out.println("alop " + ctx.getText());\
 		alopStack.clear();
 		super.visitChildren(ctx);
 		System.out.println(alopStack);
@@ -54,7 +56,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitLo(LoContext ctx) {
-		//System.out.println("lo" + ctx.getText());
+		// System.out.println("lo" + ctx.getText());
 		return super.visitLo(ctx);
 	}
 
@@ -66,7 +68,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitLa(LaContext ctx) {
-		//System.out.println("La" + ctx.getText());
+		// System.out.println("La" + ctx.getText());
 		return super.visitLa(ctx);
 	}
 
@@ -78,7 +80,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitE(EContext ctx) {
-		//System.out.println("E" + ctx.getText());
+		// System.out.println("E" + ctx.getText());
 		return super.visitE(ctx);
 	}
 
@@ -90,7 +92,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitR(RContext ctx) {
-		//System.out.println("R" + ctx.getText());
+		// System.out.println("R" + ctx.getText());
 		return super.visitR(ctx);
 	}
 
@@ -99,33 +101,43 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 		// TODO Auto-generated method stub
 		return super.visitRel(ctx);
 	}
-	
+
 	@Override
 	public Void visitExp(ExpContext ctx) {
-		if(ctx.children == null) {
+		if (ctx.children == null) {
 			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
-		System.out.println(ctx.getStart().getText());
-		if(StringUtils.isEmpty(alopStack.getLast().getOp())) {
-			alopStack.getLast().setOp(ctx.getStart().getText());
-		} else {
-			Quintet lastQuintet = alopStack.getLast();
-			if(StringUtils.equalsAny(lastQuintet.getRes(), "*", "/", "%", "+", "-")) {
-				Quintet quintet = new Quintet();
-				quintet.setArg1(tacManager.createNewTempVariable());
-				quintet.setOp(ctx.getStart().getText());
-				quintet.setRes(lastQuintet.getRes());
-				lastQuintet.setRes(quintet.getArg1());
-				alopStack.add(quintet);
-			} else {
-				Quintet quintet = new Quintet();
-				quintet.setArg1(lastQuintet.getArg2());
-				quintet.setOp(ctx.getStart().getText());
-			}
 
+		this.processAlop(ctx, "*", "/", "%", "+", "-");
 
-		}
+		/*
+		 * System.out.println(ctx.getStart().getText());
+		 * if(StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
+		 * alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
+		 * } else {
+		 * Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
+		 * if(StringUtils.equalsAny(lastQuintet.getOp(), "*", "/", "%", "+", "-")) {
+		 * Quintet quintet = new Quintet();
+		 * quintet.setArg1(tacManager.createNewTempVariable());
+		 * quintet.setOp(ctx.getStart().getText());
+		 * quintet.setRes(lastQuintet.getRes());
+		 * lastQuintet.setRes(quintet.getArg1());
+		 * alopStack.add(quintet);
+		 * } else {
+		 * Quintet quintet = new Quintet();
+		 * String newVar = tacManager.createNewTempVariable();
+		 * quintet.setArg1(lastQuintet.getArg2());
+		 * quintet.setOp(ctx.getStart().getText());
+		 * lastQuintet.setArg2(lastQuintet.getRes());
+		 * quintet.setRes(lastQuintet.getRes());
+		 * lastQuintet.setRes(newVar);
+		 * alopStack.add(alopStack.size() - 1, quintet);
+		 * }
+		 * 
+		 * 
+		 * }
+		 */
 		return super.visitExp(ctx);
 	}
 
@@ -137,25 +149,36 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitT(TContext ctx) {
-		if(ctx.children == null) {
+		if (ctx.children == null) {
 			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
-		
-		if(StringUtils.isEmpty(alopStack.getLast().getOp())) {
-			alopStack.getLast().setOp(ctx.getStart().getText());
-		} else {
-			Quintet lastQuintet = alopStack.getLast();
-			if(StringUtils.equalsAny(lastQuintet.getRes(), "*", "/", "%")) {
-				Quintet quintet = new Quintet();
-				quintet.setArg1(lastQuintet.getRes());
-				quintet.setOp(ctx.getStart().getText());
-				quintet.setRes(tacManager.createNewTempVariable());
-				alopStack.add(quintet);
-			} else {
-				
-			}
-		}
+
+		this.processAlop(ctx, "*", "/", "%");
+
+		/*
+		 * if(StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
+		 * alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
+		 * } else {
+		 * Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
+		 * if(StringUtils.equalsAny(lastQuintet.getOp(), "*", "/", "%")) {
+		 * Quintet quintet = new Quintet();
+		 * quintet.setArg1(lastQuintet.getRes());
+		 * quintet.setOp(ctx.getStart().getText());
+		 * quintet.setRes(tacManager.createNewTempVariable());
+		 * alopStack.add(quintet);
+		 * } else {
+		 * Quintet quintet = new Quintet();
+		 * String newVar = tacManager.createNewTempVariable();
+		 * quintet.setArg1(lastQuintet.getArg2());
+		 * quintet.setOp(ctx.getStart().getText());
+		 * lastQuintet.setArg2(lastQuintet.getRes());
+		 * quintet.setRes(lastQuintet.getRes());
+		 * lastQuintet.setRes(newVar);
+		 * alopStack.add(alopStack.size() - 1, quintet);
+		 * }
+		 * }
+		 */
 		return super.visitT(ctx);
 	}
 
@@ -169,15 +192,15 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 	public Void visitValue(ValueContext ctx) {
 		Quintet newOp;
 
-		if(alopStack.isEmpty()){
+		if (alopStack.isEmpty()) {
 			newOp = new Quintet();
 			newOp.setRes(tacManager.createNewTempVariable());
 			alopStack.add(newOp);
 		} else {
-			newOp = alopStack.getLast();
+			newOp = alopStack.getLastIncompleteQuintet();
 		}
-		
-		if(StringUtils.isEmpty(newOp.getArg1())) {
+
+		if (StringUtils.isEmpty(newOp.getArg1())) {
 			newOp.setArg1(ctx.getText());
 		} else {
 			newOp.setArg2(ctx.getText());
@@ -187,9 +210,32 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void>{
 
 	@Override
 	public Void visitNumber(NumberContext ctx) {
-		//System.out.println("number " + ctx.getText());
+		// System.out.println("number " + ctx.getText());
 		return super.visitNumber(ctx);
 	}
 
-	
+	private void processAlop(ParserRuleContext ctx, String... searchStrings) {
+		if (StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
+			alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
+		} else {
+			Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
+			if (StringUtils.equalsAny(lastQuintet.getOp(), searchStrings)) {
+				Quintet quintet = new Quintet();
+				quintet.setArg1(tacManager.createNewTempVariable());
+				quintet.setOp(ctx.getStart().getText());
+				quintet.setRes(lastQuintet.getRes());
+				lastQuintet.setRes(quintet.getArg1());
+				alopStack.add(quintet);
+			} else {
+				Quintet quintet = new Quintet();
+				String newVar = tacManager.createNewTempVariable();
+				quintet.setArg1(lastQuintet.getArg2());
+				quintet.setOp(ctx.getStart().getText());
+				lastQuintet.setArg2(lastQuintet.getRes());
+				quintet.setRes(lastQuintet.getRes());
+				lastQuintet.setRes(newVar);
+				alopStack.add(alopStack.size() - 1, quintet);
+			}
+		}
+	}
 }
