@@ -3,7 +3,7 @@ void main();
 void main(){
   int a=9;
 
-  if(2>1){
+  for(int b=1; 2>1; b=1+b){
     int a=2;
     a=1;    
   }

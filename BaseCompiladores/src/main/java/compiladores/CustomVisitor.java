@@ -39,6 +39,11 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 			tacManager.getTac().add(newInstruction);
 		} else if (ctx.alop() != null) {
 			super.visitChildren(ctx);
+			tacManager.getTac().addAll(alopStack);
+			Quintet newInstruction = new Quintet();
+			newInstruction.setArg1(alopStack.getLast().getRes());
+			newInstruction.setRes(ctx.ID().getText());
+			tacManager.getTac().add(newInstruction);
 		}
 		return null;
 	}
@@ -70,34 +75,55 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		Quintet startIf = new Quintet();
 		//labelToSet = true;
 		startIf.setOp("jnc");
-		startIf.setLabel(tacManager.createNewLabel());
-		tacManager.getTac().add(startIf);
+		startIf.setArg2(tacManager.createNewLabel());
 		
-		super.visitChildren(ctx);
+		super.visitAlop(ctx.alop());
+
+		startIf.setArg1(alopStack.getLast().getRes());
+		tacManager.getTac().addAll(alopStack);
+		tacManager.getTac().add(startIf);
+
+		if(ctx.block() != null) {
+			super.visitBlock(ctx.block());
+		} else {
+			super.visitInstruction(ctx.instruction());
+		}
 		
 		Quintet endIf = new Quintet();
 		endIf.setOp("lbl");
-		endIf.setLabel(tacManager.createNewLabel());
-		tacManager.getTac().getLast().setRes(endIf.getLabel());
+		endIf.setLabel(startIf.getArg2());
 		tacManager.getTac().add(endIf);
 		return null;
 	}
 
 	@Override
 	public Void visitIwhile(compiladoresParser.IwhileContext ctx){
-		Quintet startWhile = new Quintet();
+		Quintet startIf = new Quintet();
 		//labelToSet = true;
-		startWhile.setOp("jnc");
-		startWhile.setLabel(tacManager.createNewLabel());
-		tacManager.getTac().add(startWhile);
+		startIf.setOp("jnc");
+		startIf.setArg2(tacManager.createNewLabel());
 		
-		super.visitChildren(ctx);
+		super.visitAlop(ctx.alop());
+
+		startIf.setArg1(alopStack.getLast().getRes());
+		alopStack.getFirst().setLabel(tacManager.createNewLabel());
+		tacManager.getTac().addAll(alopStack);
+		tacManager.getTac().add(startIf);
+
+		if(ctx.block() != null) {
+			super.visitBlock(ctx.block());
+		} else {
+			super.visitInstruction(ctx.instruction());
+		}
 		
+		Quintet jumpWhile = new Quintet();
+		jumpWhile.setOp("jmp");
+		jumpWhile.setArg1(alopStack.getFirst().getLabel());
+		tacManager.getTac().add(jumpWhile);
+
 		Quintet endIf = new Quintet();
 		endIf.setOp("lbl");
-		endIf.setLabel(tacManager.createNewLabel());
-		endIf.setRes(startWhile.getLabel());
-		tacManager.getTac().getLast().setRes(endIf.getLabel());
+		endIf.setLabel(startIf.getArg2());
 		tacManager.getTac().add(endIf);
 		return null;
 	}
@@ -108,7 +134,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		alopStack.clear();
 		super.visitChildren(ctx);
 		// System.out.println(alopStack);
-		tacManager.getTac().addAll(alopStack);
 		return null;
 	}
 
@@ -139,14 +164,19 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitE(EContext ctx) {
 		// System.out.println("E" + ctx.getText());
+		if (ctx.children == null) {
+			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
+			return null;
+		}
+		
+		this.processAlop(ctx, "*", "/", "%", "+", "-",">","<","<=",">=","==","!=");
 		return super.visitE(ctx);
 	}
 
 	@Override
 	public Void visitEq(EqContext ctx) {
-		System.out.println("Eq" + ctx.r().getStart().getText());
 
-
+		/*
 		Quintet lastQuintet = tacManager.getTac().getLast();
 			if (StringUtils.equalsAny(lastQuintet.getOp(), "jnc")) {
 				Quintet quintet = new Quintet();
@@ -157,12 +187,22 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 				lastQuintet.setArg1(quintet.getRes());
 				tacManager.getTac().add(quintet);
 			} 
-	
+		*/
+
+		
+
 		return super.visitEq(ctx);
 	}
 
 	@Override
 	public Void visitR(RContext ctx) {
+		if (ctx.children == null) {
+			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
+			return null;
+		}
+
+		this.processAlop(ctx, "*", "/", "%", "+", "-",">","<","<=",">=");
+
 		return super.visitR(ctx);
 	}
 
