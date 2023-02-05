@@ -249,6 +249,9 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void exitParameters(ParametersContext ctx) {
+    if(ctx.getChild(0)==null){
+      return;
+    }
     if (symbolTable.containsId(ctx.getChild(0).getText())) {
       Id id = symbolTable.getId(ctx.getChild(0).getText());
       if (id.isInitialized() == false) {

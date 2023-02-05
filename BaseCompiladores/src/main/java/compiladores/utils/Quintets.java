@@ -18,4 +18,13 @@ public class Quintets extends LinkedList<Quintet> {
 			return quintets.get(0);
 		}
 	} 
+
+	public void printQuintets(){
+		for (int i = 0; i < this.size(); i++) {
+			System.out.println(this.get(i).toString());
+		}
+	}
+
+
+	
 }

@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.apache.commons.lang3.StringUtils;
 
+import compiladores.compiladoresParser.AlopContext;
 import compiladores.compiladoresParser.EContext;
 import compiladores.compiladoresParser.EqContext;
 import compiladores.compiladoresParser.ExpContext;
@@ -32,24 +33,81 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	public Void visitAssignation(compiladoresParser.AssignationContext ctx) {
 
 		if (ctx.value() != null) {
-			// System.out.println(ctx.value().getText());
 			Quintet newInstruction = new Quintet();
 			newInstruction.setArg1(ctx.value().getText());
 			newInstruction.setRes(ctx.ID().getText());
 			tacManager.getTac().add(newInstruction);
 		} else if (ctx.alop() != null) {
 			super.visitChildren(ctx);
-			// System.out.println(ctx.alop().getText());
 		}
 		return null;
 	}
 
 	@Override
-	public Void visitAlop(compiladoresParser.AlopContext ctx) {
-		// System.out.println("alop " + ctx.getText());\
+	public Void visitFunctionDeclaration(compiladoresParser.FunctionDeclarationContext ctx) {
+		//System.out.println(ctx.functionId().ID().getText());
+		Quintet newFunction = new Quintet();
+		newFunction.setOp("lbl");
+		newFunction.setLabel(tacManager.createNewLabel());
+		newFunction.setRes(ctx.functionId().ID().getText());
+		tacManager.addFunction(newFunction);
+		return super.visitChildren(ctx);
+	}
+
+	@Override
+	public Void visitFunctionCall(compiladoresParser.FunctionCallContext ctx) {
+		System.out.println(ctx.ID().getText());
+		Quintet newInstruction = new Quintet();
+		newInstruction.setOp("jmp");
+		newInstruction.setArg1(tacManager.getFuntionLabel(ctx.ID().getText()));
+		tacManager.getTac().add(newInstruction);
+		tacManager.getTac().printQuintets();
+		return super.visitChildren(ctx);
+	}
+
+	@Override
+	public Void visitIif(compiladoresParser.IifContext ctx) {
+		Quintet startIf = new Quintet();
+		//labelToSet = true;
+		startIf.setOp("jnc");
+		startIf.setLabel(tacManager.createNewLabel());
+		tacManager.getTac().add(startIf);
+		
+		super.visitChildren(ctx);
+		
+		Quintet endIf = new Quintet();
+		endIf.setOp("lbl");
+		endIf.setLabel(tacManager.createNewLabel());
+		tacManager.getTac().getLast().setRes(endIf.getLabel());
+		tacManager.getTac().add(endIf);
+		return null;
+	}
+
+	@Override
+	public Void visitIwhile(compiladoresParser.IwhileContext ctx){
+		Quintet startWhile = new Quintet();
+		//labelToSet = true;
+		startWhile.setOp("jnc");
+		startWhile.setLabel(tacManager.createNewLabel());
+		tacManager.getTac().add(startWhile);
+		
+		super.visitChildren(ctx);
+		
+		Quintet endIf = new Quintet();
+		endIf.setOp("lbl");
+		endIf.setLabel(tacManager.createNewLabel());
+		endIf.setRes(startWhile.getLabel());
+		tacManager.getTac().getLast().setRes(endIf.getLabel());
+		tacManager.getTac().add(endIf);
+		return null;
+	}
+
+	@Override
+	public Void visitAlop(AlopContext ctx) {
+
 		alopStack.clear();
 		super.visitChildren(ctx);
-		System.out.println(alopStack);
+		// System.out.println(alopStack);
 		tacManager.getTac().addAll(alopStack);
 		return null;
 	}
@@ -86,19 +144,30 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitEq(EqContext ctx) {
-		// TODO Auto-generated method stub
+		System.out.println("Eq" + ctx.r().getStart().getText());
+
+
+		Quintet lastQuintet = tacManager.getTac().getLast();
+			if (StringUtils.equalsAny(lastQuintet.getOp(), "jnc")) {
+				Quintet quintet = new Quintet();
+				quintet.setArg1(ctx.rel().term().factor().value().number().getText());
+				quintet.setOp(ctx.r().getStart().getText());
+				quintet.setArg2(ctx.rel().term().factor().value().number().getText());
+				quintet.setRes(tacManager.createNewTempVariable());
+				lastQuintet.setArg1(quintet.getRes());
+				tacManager.getTac().add(quintet);
+			} 
+	
 		return super.visitEq(ctx);
 	}
 
 	@Override
 	public Void visitR(RContext ctx) {
-		// System.out.println("R" + ctx.getText());
 		return super.visitR(ctx);
 	}
 
 	@Override
 	public Void visitRel(RelContext ctx) {
-		// TODO Auto-generated method stub
 		return super.visitRel(ctx);
 	}
 
