@@ -1,9 +1,8 @@
 package compiladores;
 
-import java.util.List;
+import java.util.Stack;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.RuleNode;
 import org.apache.commons.lang3.StringUtils;
 
 import compiladores.compiladoresParser.AlopContext;
@@ -27,7 +26,7 @@ import compiladores.utils.ThreeAddressCodeManager;
 
 public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	private ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager();
-	Quintets alopStack = new Quintets();
+	Stack<Quintets> alopStack = new Stack<Quintets>();
 
 	@Override
 	public Void visitAssignation(compiladoresParser.AssignationContext ctx) {
@@ -39,9 +38,9 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 			tacManager.getTac().add(newInstruction);
 		} else if (ctx.alop() != null) {
 			super.visitChildren(ctx);
-			tacManager.getTac().addAll(alopStack);
+			tacManager.getTac().addAll(alopStack.peek());
 			Quintet newInstruction = new Quintet();
-			newInstruction.setArg1(alopStack.getLast().getRes());
+			newInstruction.setArg1(alopStack.peek().getLast().getRes());
 			newInstruction.setRes(ctx.ID().getText());
 			tacManager.getTac().add(newInstruction);
 		}
@@ -50,7 +49,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitFunctionDeclaration(compiladoresParser.FunctionDeclarationContext ctx) {
-		//System.out.println(ctx.functionId().ID().getText());
 		Quintet newFunction = new Quintet();
 		newFunction.setOp("lbl");
 		newFunction.setLabel(tacManager.createNewLabel());
@@ -73,22 +71,21 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitIif(compiladoresParser.IifContext ctx) {
 		Quintet startIf = new Quintet();
-		//labelToSet = true;
 		startIf.setOp("jnc");
 		startIf.setArg2(tacManager.createNewLabel());
-		
+
 		super.visitAlop(ctx.alop());
 
-		startIf.setArg1(alopStack.getLast().getRes());
-		tacManager.getTac().addAll(alopStack);
+		startIf.setArg1(alopStack.peek().getLast().getRes());
+		tacManager.getTac().addAll(alopStack.peek());
 		tacManager.getTac().add(startIf);
 
-		if(ctx.block() != null) {
+		if (ctx.block() != null) {
 			super.visitBlock(ctx.block());
 		} else {
 			super.visitInstruction(ctx.instruction());
 		}
-		
+
 		Quintet endIf = new Quintet();
 		endIf.setOp("lbl");
 		endIf.setLabel(startIf.getArg2());
@@ -97,28 +94,27 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	}
 
 	@Override
-	public Void visitIwhile(compiladoresParser.IwhileContext ctx){
+	public Void visitIwhile(compiladoresParser.IwhileContext ctx) {
 		Quintet startIf = new Quintet();
-		//labelToSet = true;
 		startIf.setOp("jnc");
 		startIf.setArg2(tacManager.createNewLabel());
-		
+
 		super.visitAlop(ctx.alop());
 
-		startIf.setArg1(alopStack.getLast().getRes());
-		alopStack.getFirst().setLabel(tacManager.createNewLabel());
-		tacManager.getTac().addAll(alopStack);
+		startIf.setArg1(alopStack.peek().getLast().getRes());
+		alopStack.peek().getFirst().setLabel(tacManager.createNewLabel());
+		tacManager.getTac().addAll(alopStack.peek());
 		tacManager.getTac().add(startIf);
 
-		if(ctx.block() != null) {
+		if (ctx.block() != null) {
 			super.visitBlock(ctx.block());
 		} else {
 			super.visitInstruction(ctx.instruction());
 		}
-		
+
 		Quintet jumpWhile = new Quintet();
 		jumpWhile.setOp("jmp");
-		jumpWhile.setArg1(alopStack.getFirst().getLabel());
+		jumpWhile.setArg1(alopStack.peek().getFirst().getLabel());
 		tacManager.getTac().add(jumpWhile);
 
 		Quintet endIf = new Quintet();
@@ -131,66 +127,68 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitAlop(AlopContext ctx) {
 
-		alopStack.clear();
+		if (!(ctx.parent instanceof FactorContext)) {
+			alopStack.clear();
+		}
+		alopStack.add(new Quintets());
 		super.visitChildren(ctx);
-		// System.out.println(alopStack);
+		if (ctx.parent instanceof FactorContext) {
+			Quintets parenthesesQuintets = alopStack.pop();
+			if (alopStack.peek().isEmpty()) {
+				alopStack.peek().addAll(parenthesesQuintets);
+				Quintet unitingOp = new Quintet();
+				unitingOp.setArg1(alopStack.peek().getLast().getRes());
+				unitingOp.setRes(tacManager.createNewTempVariable());
+				alopStack.peek().add(unitingOp);
+			} else {
+				Quintet lastIncompleQuintet = alopStack.peek().getLastIncompleteQuintet();
+				alopStack.peek().addAll(alopStack.peek().indexOf(alopStack.peek().getLastIncompleteQuintet()),
+						parenthesesQuintets);
+				Quintet unitingOp = lastIncompleQuintet;
+				if (StringUtils.isEmpty(unitingOp.getArg1())) {
+					unitingOp.setArg1(parenthesesQuintets.getLast().getRes());
+				} else {
+					unitingOp.setArg2(parenthesesQuintets.getLast().getRes());
+				}
+			}
+		}
 		return null;
 	}
 
 	@Override
 	public Void visitLo(LoContext ctx) {
-		// System.out.println("lo" + ctx.getText());
 		return super.visitLo(ctx);
 	}
 
 	@Override
 	public Void visitLogOr(LogOrContext ctx) {
-		// TODO Auto-generated method stub
 		return super.visitLogOr(ctx);
 	}
 
 	@Override
 	public Void visitLa(LaContext ctx) {
-		// System.out.println("La" + ctx.getText());
 		return super.visitLa(ctx);
 	}
 
 	@Override
 	public Void visitLogAnd(LogAndContext ctx) {
-		// TODO Auto-generated method stub
 		return super.visitLogAnd(ctx);
 	}
 
 	@Override
 	public Void visitE(EContext ctx) {
-		// System.out.println("E" + ctx.getText());
+
 		if (ctx.children == null) {
 			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
-		
-		this.processAlop(ctx, "*", "/", "%", "+", "-",">","<","<=",">=","==","!=");
+
+		this.processAlop(ctx, "*", "/", "%", "+", "-", ">", "<", "<=", ">=", "==", "!=");
 		return super.visitE(ctx);
 	}
 
 	@Override
 	public Void visitEq(EqContext ctx) {
-
-		/*
-		Quintet lastQuintet = tacManager.getTac().getLast();
-			if (StringUtils.equalsAny(lastQuintet.getOp(), "jnc")) {
-				Quintet quintet = new Quintet();
-				quintet.setArg1(ctx.rel().term().factor().value().number().getText());
-				quintet.setOp(ctx.r().getStart().getText());
-				quintet.setArg2(ctx.rel().term().factor().value().number().getText());
-				quintet.setRes(tacManager.createNewTempVariable());
-				lastQuintet.setArg1(quintet.getRes());
-				tacManager.getTac().add(quintet);
-			} 
-		*/
-
-		
-
 		return super.visitEq(ctx);
 	}
 
@@ -201,7 +199,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 			return null;
 		}
 
-		this.processAlop(ctx, "*", "/", "%", "+", "-",">","<","<=",">=");
+		this.processAlop(ctx, "*", "/", "%", "+", "-", ">", "<", "<=", ">=");
 
 		return super.visitR(ctx);
 	}
@@ -220,39 +218,11 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 		this.processAlop(ctx, "*", "/", "%", "+", "-");
 
-		/*
-		 * System.out.println(ctx.getStart().getText());
-		 * if(StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
-		 * alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
-		 * } else {
-		 * Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
-		 * if(StringUtils.equalsAny(lastQuintet.getOp(), "*", "/", "%", "+", "-")) {
-		 * Quintet quintet = new Quintet();
-		 * quintet.setArg1(tacManager.createNewTempVariable());
-		 * quintet.setOp(ctx.getStart().getText());
-		 * quintet.setRes(lastQuintet.getRes());
-		 * lastQuintet.setRes(quintet.getArg1());
-		 * alopStack.add(quintet);
-		 * } else {
-		 * Quintet quintet = new Quintet();
-		 * String newVar = tacManager.createNewTempVariable();
-		 * quintet.setArg1(lastQuintet.getArg2());
-		 * quintet.setOp(ctx.getStart().getText());
-		 * lastQuintet.setArg2(lastQuintet.getRes());
-		 * quintet.setRes(lastQuintet.getRes());
-		 * lastQuintet.setRes(newVar);
-		 * alopStack.add(alopStack.size() - 1, quintet);
-		 * }
-		 * 
-		 * 
-		 * }
-		 */
 		return super.visitExp(ctx);
 	}
 
 	@Override
 	public Void visitTerm(TermContext ctx) {
-		// TODO Auto-generated method stub
 		return super.visitTerm(ctx);
 	}
 
@@ -265,35 +235,11 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 		this.processAlop(ctx, "*", "/", "%");
 
-		/*
-		 * if(StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
-		 * alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
-		 * } else {
-		 * Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
-		 * if(StringUtils.equalsAny(lastQuintet.getOp(), "*", "/", "%")) {
-		 * Quintet quintet = new Quintet();
-		 * quintet.setArg1(lastQuintet.getRes());
-		 * quintet.setOp(ctx.getStart().getText());
-		 * quintet.setRes(tacManager.createNewTempVariable());
-		 * alopStack.add(quintet);
-		 * } else {
-		 * Quintet quintet = new Quintet();
-		 * String newVar = tacManager.createNewTempVariable();
-		 * quintet.setArg1(lastQuintet.getArg2());
-		 * quintet.setOp(ctx.getStart().getText());
-		 * lastQuintet.setArg2(lastQuintet.getRes());
-		 * quintet.setRes(lastQuintet.getRes());
-		 * lastQuintet.setRes(newVar);
-		 * alopStack.add(alopStack.size() - 1, quintet);
-		 * }
-		 * }
-		 */
 		return super.visitT(ctx);
 	}
 
 	@Override
 	public Void visitFactor(FactorContext ctx) {
-		// TODO Auto-generated method stub
 		return super.visitFactor(ctx);
 	}
 
@@ -301,12 +247,12 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	public Void visitValue(ValueContext ctx) {
 		Quintet newOp;
 
-		if (alopStack.isEmpty()) {
+		if (alopStack.peek().isEmpty()) {
 			newOp = new Quintet();
 			newOp.setRes(tacManager.createNewTempVariable());
-			alopStack.add(newOp);
+			alopStack.peek().add(newOp);
 		} else {
-			newOp = alopStack.getLastIncompleteQuintet();
+			newOp = alopStack.peek().getLastIncompleteQuintet();
 		}
 
 		if (StringUtils.isEmpty(newOp.getArg1())) {
@@ -319,22 +265,21 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitNumber(NumberContext ctx) {
-		// System.out.println("number " + ctx.getText());
 		return super.visitNumber(ctx);
 	}
 
 	private void processAlop(ParserRuleContext ctx, String... searchStrings) {
-		if (StringUtils.isEmpty(alopStack.getLastIncompleteQuintet().getOp())) {
-			alopStack.getLastIncompleteQuintet().setOp(ctx.getStart().getText());
+		if (StringUtils.isEmpty(alopStack.peek().getLastIncompleteQuintet().getOp())) {
+			alopStack.peek().getLastIncompleteQuintet().setOp(ctx.getStart().getText());
 		} else {
-			Quintet lastQuintet = alopStack.getLastIncompleteQuintet();
+			Quintet lastQuintet = alopStack.peek().getLastIncompleteQuintet();
 			if (StringUtils.equalsAny(lastQuintet.getOp(), searchStrings)) {
 				Quintet quintet = new Quintet();
 				quintet.setArg1(tacManager.createNewTempVariable());
 				quintet.setOp(ctx.getStart().getText());
 				quintet.setRes(lastQuintet.getRes());
 				lastQuintet.setRes(quintet.getArg1());
-				alopStack.add(quintet);
+				alopStack.peek().add(quintet);
 			} else {
 				Quintet quintet = new Quintet();
 				String newVar = tacManager.createNewTempVariable();
@@ -343,7 +288,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 				lastQuintet.setArg2(lastQuintet.getRes());
 				quintet.setRes(lastQuintet.getRes());
 				lastQuintet.setRes(newVar);
-				alopStack.add(alopStack.size() - 1, quintet);
+				alopStack.peek().add(alopStack.peek().size() - 1, quintet);
 			}
 		}
 	}

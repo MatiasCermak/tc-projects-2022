@@ -3,12 +3,7 @@ void main();
 void main(){
   int a=9;
 
-  for(int b=1; 2>1; b=1+b){
-    int a=2;
-    a=1;    
-  }
-
-  a=76+8-a*9;
+  a=76+8-a*(9+((1-2*(48*123)-5)*3));
 
   main();
 }
