@@ -4,11 +4,19 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class ThreeAddressCodeManager {
 	private LinkedList<String> tempVariables = new LinkedList<>();
 	private LinkedList<String> labels = new LinkedList<>();
 	private Map<String, String> labelMap = new HashMap<>();
 	private Quintets tac = new Quintets();
+	public static String POP = "pop";
+	public static String LBL = "lbl";
+	public static String END = "end";
+	public static String JMP = "jmp";
+	public static String PSH = "psh";
+	public static String JNC = "jnc";
 
 	public LinkedList<String> getTempVariables() {
 		return tempVariables;
@@ -32,6 +40,7 @@ public class ThreeAddressCodeManager {
 
 	public void addFunction(Quintet function) {
 		labelMap.put(function.getRes(), function.getLabel());
+		if(StringUtils.isEmpty(function.getOp())) return;
 		tac.add(function);
 
 	}

@@ -92,7 +92,7 @@ assignation: ID EQ (value | alop);
 
 value: number | ID | functionCall | CHARACTER;
 
-number: NUMBER | DECIMAL_NUMBER;
+number: SUB?NUMBER | SUB?DECIMAL_NUMBER;
 
 controlStructure: iwhile | ifor | iif;
 

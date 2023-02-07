@@ -40,6 +40,6 @@ public class Quintet {
 
     @Override
     public String toString() {
-        return label + res + " = " + arg1 + op + arg2 ;
+        return "label= " + label + " res= " + res + " arg1= " + arg1 + " op= " + op + " arg2= " + arg2 ;
     }
 }

@@ -61,9 +61,10 @@ public class App {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.pack();
             frame.setVisible(true);
-
-						CustomVisitor visitor = new CustomVisitor();
-						visitor.visit(tree);
+            CustomVisitor visitor = new CustomVisitor();
+            visitor.visit(tree);
+            System.out.print("---------------------------------- \n");
+            visitor.tacManager.getTac().printQuintets();
         }
     }
 }

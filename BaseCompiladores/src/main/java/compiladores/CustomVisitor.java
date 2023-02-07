@@ -10,11 +10,14 @@ import compiladores.compiladoresParser.EContext;
 import compiladores.compiladoresParser.EqContext;
 import compiladores.compiladoresParser.ExpContext;
 import compiladores.compiladoresParser.FactorContext;
+import compiladores.compiladoresParser.FunctionForwardDeclarationContext;
 import compiladores.compiladoresParser.LaContext;
 import compiladores.compiladoresParser.LoContext;
 import compiladores.compiladoresParser.LogAndContext;
 import compiladores.compiladoresParser.LogOrContext;
 import compiladores.compiladoresParser.NumberContext;
+import compiladores.compiladoresParser.ParametersContext;
+import compiladores.compiladoresParser.ParametersDeclarationContext;
 import compiladores.compiladoresParser.RContext;
 import compiladores.compiladoresParser.RelContext;
 import compiladores.compiladoresParser.TContext;
@@ -25,8 +28,8 @@ import compiladores.utils.Quintets;
 import compiladores.utils.ThreeAddressCodeManager;
 
 public class CustomVisitor extends compiladoresBaseVisitor<Void> {
-	private ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager();
-	Stack<Quintets> alopStack = new Stack<Quintets>();
+	public ThreeAddressCodeManager tacManager = new ThreeAddressCodeManager();
+	private Stack<Quintets> alopStack = new Stack<Quintets>();
 
 	@Override
 	public Void visitAssignation(compiladoresParser.AssignationContext ctx) {
@@ -50,31 +53,126 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitFunctionDeclaration(compiladoresParser.FunctionDeclarationContext ctx) {
 		Quintet newFunction = new Quintet();
-		newFunction.setOp("lbl");
-		newFunction.setLabel(tacManager.createNewLabel());
+		newFunction.setOp(ThreeAddressCodeManager.LBL);
 		newFunction.setRes(ctx.functionId().ID().getText());
-		tacManager.addFunction(newFunction);
-		return super.visitChildren(ctx);
+		if(tacManager.getFuntionLabel(newFunction.getRes()) == null){
+			newFunction.setLabel(tacManager.createNewLabel());
+			tacManager.addFunction(newFunction);
+		} else {
+			newFunction.setLabel(tacManager.getFuntionLabel(newFunction.getRes()));
+			tacManager.getTac().add(newFunction);
+		}
+
+		Quintet getLabelToGo = new Quintet();
+		getLabelToGo.setOp(ThreeAddressCodeManager.POP);
+		getLabelToGo.setRes(tacManager.createNewTempVariable());
+		tacManager.getTac().add(getLabelToGo);
+		
+		if(ctx.parametersDeclaration() != null) {
+			this.visitParametersDeclaration(ctx.parametersDeclaration());
+		}
+
+		this.visitBlock(ctx.block());
+		if("main".equals(newFunction.getRes())){
+			Quintet endProgram = new Quintet();
+			endProgram.setOp(ThreeAddressCodeManager.END);
+			tacManager.getTac().add(endProgram);
+		} else {
+			Quintet endJmp = new Quintet();
+			endJmp.setOp(ThreeAddressCodeManager.JMP);
+			endJmp.setArg1(getLabelToGo.getRes());
+			tacManager.getTac().add(endJmp);
+		}
+		return null;
+	}
+
+	
+
+	@Override
+	public Void visitFunctionForwardDeclaration(FunctionForwardDeclarationContext ctx) {
+		if(ctx.children == null) {
+			return null;
+		}
+
+		Quintet funcQuintet = new Quintet();
+
+		funcQuintet.setRes(ctx.functionId().ID().getText());
+		funcQuintet.setLabel(tacManager.createNewLabel());
+
+		tacManager.addFunction(funcQuintet);
+
+		return null;
 	}
 
 	@Override
 	public Void visitFunctionCall(compiladoresParser.FunctionCallContext ctx) {
 		System.out.println(ctx.ID().getText());
+		if(ctx.parameters() != null) {
+			this.visitParameters(ctx.parameters());
+		}
+
+		Quintet pushLabel = new Quintet();
+		pushLabel.setOp(ThreeAddressCodeManager.PSH);
+		pushLabel.setArg1(tacManager.createNewLabel());
+		tacManager.getTac().add(pushLabel);
+
 		Quintet newInstruction = new Quintet();
-		newInstruction.setOp("jmp");
-		newInstruction.setArg1(tacManager.getFuntionLabel(ctx.ID().getText()));
+		newInstruction.setOp(ThreeAddressCodeManager.JMP);
+		newInstruction.setArg1(tacManager.getFuntionLabel(ctx.start.getText()));
 		tacManager.getTac().add(newInstruction);
+		
+		Quintet returnLabel = new Quintet();
+		returnLabel.setOp(ThreeAddressCodeManager.LBL);
+		returnLabel.setLabel(pushLabel.getArg1());
+		tacManager.getTac().add(returnLabel);
 		tacManager.getTac().printQuintets();
-		return super.visitChildren(ctx);
+		return null;
+	}
+
+	
+
+	@Override
+	public Void visitParameters(ParametersContext ctx) {
+		if(ctx.children == null) {
+			return null;
+		}
+
+		Quintet newParameter = new Quintet();
+		newParameter.setOp(ThreeAddressCodeManager.PSH);
+		newParameter.setArg1(ctx.start.getText());
+		tacManager.getTac().add(newParameter);
+		if(ctx.parameters() != null) {
+			this.visitParameters(ctx.parameters());
+		}
+
+		return null;
+	}
+
+	@Override
+	public Void visitParametersDeclaration(ParametersDeclarationContext ctx) {
+		if(ctx.children == null) {
+			return null;
+		}
+
+		if(ctx.parametersDeclaration() != null) {
+			this.visitParametersDeclaration(ctx.parametersDeclaration());
+		}
+
+		Quintet newParameter = new Quintet();
+		newParameter.setOp(ThreeAddressCodeManager.POP);
+		newParameter.setRes(ctx.ID().getText());
+		tacManager.getTac().add(newParameter);
+
+		return null;
 	}
 
 	@Override
 	public Void visitIif(compiladoresParser.IifContext ctx) {
 		Quintet startIf = new Quintet();
-		startIf.setOp("jnc");
+		startIf.setOp(ThreeAddressCodeManager.JNC);
 		startIf.setArg2(tacManager.createNewLabel());
 
-		super.visitAlop(ctx.alop());
+		this.visitAlop(ctx.alop());
 
 		startIf.setArg1(alopStack.peek().getLast().getRes());
 		tacManager.getTac().addAll(alopStack.peek());
@@ -87,7 +185,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		}
 
 		Quintet endIf = new Quintet();
-		endIf.setOp("lbl");
+		endIf.setOp(ThreeAddressCodeManager.LBL);
 		endIf.setLabel(startIf.getArg2());
 		tacManager.getTac().add(endIf);
 		return null;
@@ -96,7 +194,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitIwhile(compiladoresParser.IwhileContext ctx) {
 		Quintet startIf = new Quintet();
-		startIf.setOp("jnc");
+		startIf.setOp(ThreeAddressCodeManager.JNC);
 		startIf.setArg2(tacManager.createNewLabel());
 
 		super.visitAlop(ctx.alop());
@@ -113,12 +211,12 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		}
 
 		Quintet jumpWhile = new Quintet();
-		jumpWhile.setOp("jmp");
+		jumpWhile.setOp(ThreeAddressCodeManager.JMP);
 		jumpWhile.setArg1(alopStack.peek().getFirst().getLabel());
 		tacManager.getTac().add(jumpWhile);
 
 		Quintet endIf = new Quintet();
-		endIf.setOp("lbl");
+		endIf.setOp(ThreeAddressCodeManager.LBL);
 		endIf.setLabel(startIf.getArg2());
 		tacManager.getTac().add(endIf);
 		return null;
@@ -157,6 +255,12 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitLo(LoContext ctx) {
+		if (ctx.children == null) {
+			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
+			return null;
+		}
+
+		this.processAlop(ctx, "*", "/", "%", "+", "-", ">", "<", "<=", ">=", "==", "!=", "&&", "||");
 		return super.visitLo(ctx);
 	}
 
@@ -167,6 +271,12 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitLa(LaContext ctx) {
+		if (ctx.children == null) 	{
+			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
+			return null;
+		}
+
+		this.processAlop(ctx, "*", "/", "%", "+", "-", ">", "<", "<=", ">=", "==", "!=", "&&");
 		return super.visitLa(ctx);
 	}
 

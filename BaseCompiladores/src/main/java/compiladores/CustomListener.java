@@ -103,7 +103,9 @@ public class CustomListener extends compiladoresBaseListener {
   @Override
   public void exitBlock(BlockContext ctx) {
     variableCheck(ctx);
-    stack.add(this.symbolTable.removeScope());
+    if (!(ctx.getParent() instanceof IforContext)) {
+      stack.add(this.symbolTable.removeScope());
+    }
   }
 
   @Override
@@ -148,8 +150,8 @@ public class CustomListener extends compiladoresBaseListener {
         this.symbolTable.addId(id);
       }
     } else {
-      if (symbolTable.containsLocalId(ctx.getChild(0).getText())) {
-        Id id = symbolTable.getLocalId(ctx.getChild(0).getText());
+      if (symbolTable.containsId(ctx.getChild(0).getText())) {
+        Id id = symbolTable.getId(ctx.getChild(0).getText());
         if (id instanceof Function) {
           printSemanticError("Attempted assignation to " + ctx.getChild(0).getText() + " which is a function", ctx);
         } else {
