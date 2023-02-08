@@ -1,5 +1,7 @@
 package compiladores.utils;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class Quintet {
     private String label = "";
     private String arg1 = "";
@@ -40,6 +42,21 @@ public class Quintet {
 
     @Override
     public String toString() {
-        return "label= " + label + " res= " + res + " arg1= " + arg1 + " op= " + op + " arg2= " + arg2 ;
+        String labelString = (StringUtils.isEmpty(label)? "  ": label);
+
+        switch(op) {
+            case "lbl":
+             return labelString + " " + op + " " + res;
+            case "pop":
+             return labelString  + " " + res + " = " + op;
+            case "je":
+            case "jmp":
+            case "psh":
+             return labelString + " " + op + " " + arg1 + " " + arg2;
+            case "end":
+             return labelString + " " + op;
+            default:
+                return  labelString + " " + res + " = " + arg1 + " " + op + " " + arg2;
+        }
     }
 }

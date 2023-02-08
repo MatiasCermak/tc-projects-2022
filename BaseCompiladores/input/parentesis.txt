@@ -4,11 +4,17 @@ void funcion(int b);
 void main(){
 
   int a = 5;
-
+  int b = 1;
+  b = 1 + 1 + 1; 
   if(5>6){
+    a=a-5
   }
 
-  a=a-5;
+  for(a=1; a < 10; a = a + 1) {
+    a = 1;
+  }
+
+  a=a+5;
   funcion(a);
 }
 

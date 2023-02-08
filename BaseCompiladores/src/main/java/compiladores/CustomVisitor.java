@@ -11,6 +11,7 @@ import compiladores.compiladoresParser.EqContext;
 import compiladores.compiladoresParser.ExpContext;
 import compiladores.compiladoresParser.FactorContext;
 import compiladores.compiladoresParser.FunctionForwardDeclarationContext;
+import compiladores.compiladoresParser.IforContext;
 import compiladores.compiladoresParser.LaContext;
 import compiladores.compiladoresParser.LoContext;
 import compiladores.compiladoresParser.LogAndContext;
@@ -106,7 +107,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 
 	@Override
 	public Void visitFunctionCall(compiladoresParser.FunctionCallContext ctx) {
-		System.out.println(ctx.ID().getText());
 		if(ctx.parameters() != null) {
 			this.visitParameters(ctx.parameters());
 		}
@@ -125,7 +125,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		returnLabel.setOp(ThreeAddressCodeManager.LBL);
 		returnLabel.setLabel(pushLabel.getArg1());
 		tacManager.getTac().add(returnLabel);
-		tacManager.getTac().printQuintets();
 		return null;
 	}
 
@@ -169,7 +168,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitIif(compiladoresParser.IifContext ctx) {
 		Quintet startIf = new Quintet();
-		startIf.setOp(ThreeAddressCodeManager.JNC);
+		startIf.setOp(ThreeAddressCodeManager.JE);
 		startIf.setArg2(tacManager.createNewLabel());
 
 		this.visitAlop(ctx.alop());
@@ -194,7 +193,7 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitIwhile(compiladoresParser.IwhileContext ctx) {
 		Quintet startIf = new Quintet();
-		startIf.setOp(ThreeAddressCodeManager.JNC);
+		startIf.setOp(ThreeAddressCodeManager.JE);
 		startIf.setArg2(tacManager.createNewLabel());
 
 		super.visitAlop(ctx.alop());
@@ -219,6 +218,42 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 		endIf.setOp(ThreeAddressCodeManager.LBL);
 		endIf.setLabel(startIf.getArg2());
 		tacManager.getTac().add(endIf);
+		return null;
+	}
+
+	
+
+	@Override
+	public Void visitIfor(IforContext ctx) {
+		this.visitAssignation(ctx.assignation(0));
+		Quintet startFor = new Quintet();
+		startFor.setOp(ThreeAddressCodeManager.JE);
+		startFor.setArg2(tacManager.createNewLabel());
+
+		this.visitAlop(ctx.alop());
+
+		startFor.setArg1(alopStack.peek().getLast().getRes());
+		alopStack.peek().getFirst().setLabel(tacManager.createNewLabel());
+		tacManager.getTac().addAll(alopStack.peek());
+		tacManager.getTac().add(startFor);
+
+		if (ctx.block() != null) {
+			super.visitBlock(ctx.block());
+		} else {
+			super.visitInstruction(ctx.instruction());
+		}
+
+		Quintet jumpWhile = new Quintet();
+		jumpWhile.setOp(ThreeAddressCodeManager.JMP);
+		jumpWhile.setArg1(alopStack.peek().getFirst().getLabel());
+
+		this.visitAssignation(ctx.assignation(1));
+		tacManager.getTac().add(jumpWhile);
+
+		Quintet endFor = new Quintet();
+		endFor.setOp(ThreeAddressCodeManager.LBL);
+		endFor.setLabel(startFor.getArg2());
+		tacManager.getTac().add(endFor);
 		return null;
 	}
 
@@ -256,7 +291,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitLo(LoContext ctx) {
 		if (ctx.children == null) {
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 
@@ -272,7 +306,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitLa(LaContext ctx) {
 		if (ctx.children == null) 	{
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 
@@ -289,7 +322,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	public Void visitE(EContext ctx) {
 
 		if (ctx.children == null) {
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 
@@ -305,7 +337,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitR(RContext ctx) {
 		if (ctx.children == null) {
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 
@@ -322,7 +353,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitExp(ExpContext ctx) {
 		if (ctx.children == null) {
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 
@@ -339,7 +369,6 @@ public class CustomVisitor extends compiladoresBaseVisitor<Void> {
 	@Override
 	public Void visitT(TContext ctx) {
 		if (ctx.children == null) {
-			System.out.println("Nodo final " + ctx.getClass().getSimpleName());
 			return null;
 		}
 

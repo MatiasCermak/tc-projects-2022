@@ -45,7 +45,6 @@ public class App {
 
         if (errors.isEmpty()) {
             // Mostrar por consola
-            // System.out.println(tree.toStringTree(parser));
             listener.printSymbolTable();
             // Mostrar en JFrame
             JFrame frame = new JFrame("Antlr Syntactic Tree");
@@ -64,6 +63,11 @@ public class App {
             CustomVisitor visitor = new CustomVisitor();
             visitor.visit(tree);
             System.out.print("---------------------------------- \n");
+            visitor.tacManager.getTac().printQuintets();
+            System.out.print("------------------------------------- \n");
+            visitor.tacManager.optimizeTac(1);
+            System.out.print("------------------------------------- \n");
+            System.out.print("Final Three Address Code \n\n");
             visitor.tacManager.getTac().printQuintets();
         }
     }

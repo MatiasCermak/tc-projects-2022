@@ -16,6 +16,8 @@ public class CustomErrorListener extends BaseErrorListener {
         this.errors = errors;
     }
 
+
+    
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine,
             String text, RecognitionException e) {
