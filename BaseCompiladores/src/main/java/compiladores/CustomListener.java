@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.tree.ErrorNode;
 
 import compiladores.compiladoresParser.AssignationContext;
 import compiladores.compiladoresParser.BlockContext;
@@ -52,6 +51,7 @@ public class CustomListener extends compiladoresBaseListener {
 
   @Override
   public void enterProg(ProgContext ctx) {
+    System.out.println("");
     this.symbolTable.addScope();
   }
 
@@ -295,12 +295,5 @@ public class CustomListener extends compiladoresBaseListener {
       printSemanticError("\n Not used ->" + notUsed, ctx);
     }
   }
-
-  @Override
-  public void visitErrorNode(ErrorNode node) {
-    System.out.println("Error");
-    super.visitErrorNode(node);
-  }
-
   
 }

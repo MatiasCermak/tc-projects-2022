@@ -36,8 +36,13 @@ public class App {
         // create Listener
         CustomListener listener = new CustomListener(errors);
 
+        CustomErrorListener errorListener = new CustomErrorListener(errors);
         // Conecto el objeto con Listeners al parser
         parser.addParseListener(listener);
+
+        // Removemos el error listener base para que no salga 2 veces la misma información.
+        parser.removeErrorListeners();
+        parser.addErrorListener(errorListener);
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
